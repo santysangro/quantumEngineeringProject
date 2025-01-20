@@ -5,17 +5,44 @@ from openfermionpyscf import generate_molecular_hamiltonian
 from qiskit.quantum_info import Operator, Statevector
 from qiskit import transpile, QuantumCircuit, QuantumRegister
 from qiskit.circuit.library import QFT
+from qiskit_nature.units import DistanceUnit
+from qiskit_nature.second_q.drivers import PySCFDriver
+from qiskit_nature.second_q.mappers import BravyiKitaevMapper
+from qiskit.circuit.library import PauliEvolutionGate
+from qiskit.quantum_info import SparsePauliOp
 
 # GLOBALS:
 sim = StatevectorSimulator()
+geometry = [('H', (0.0, 0.0, 0.0)), ('H', (0.0, 0.0, 0.7))]
+basis = 'sto-3g'
+multiplicity = 1
+charge = 0
+
+
+def get_H_qiskit():
+    driver = PySCFDriver(
+        atom="H 0 0 0; H 0 0 0.741237",
+        basis="sto3g",
+        charge=0,
+        spin=0,
+        unit=DistanceUnit.ANGSTROM, )
+    problem = driver.run()
+    hamiltonian = problem.hamiltonian
+    second_q_op = hamiltonian.second_q_op()
+    mapper = BravyiKitaevMapper()
+    qubit_op = mapper.map(second_q_op)
+    # Convert the Hamiltonian to a SparsePauliOp for evolution
+    pauli_op = SparsePauliOp.from_list(qubit_op.to_list())
+    time = 1.0  # Set the time for evolution (arbitrary units)
+    # Create the time evolution circuit
+    evolution_gate = PauliEvolutionGate(pauli_op, time)
+    n_qubits = qubit_op.num_qubits
+    evolution_circuit = QuantumCircuit(n_qubits)
+    evolution_circuit.append(evolution_gate, range(n_qubits))
+    return evolution_circuit
 
 
 def calculate_overlap_integrals():
-    geometry = [('H', (0.0, 0.0, 0.0)), ('H', (0.0, 0.0, 0.7))]
-    basis = 'sto-3g'
-    multiplicity = 1
-    charge = 0
-
     hamiltonian = generate_molecular_hamiltonian(geometry, basis, multiplicity, charge)
 
     one_body_coefficients = hamiltonian.one_body_tensor
@@ -26,30 +53,38 @@ def calculate_overlap_integrals():
     h22 = one_body_coefficients[2, 2]
     h33 = one_body_coefficients[3, 3]
 
-    h0110 = two_body_coefficients[0, 1, 1, 0]
-    h0330 = two_body_coefficients[0, 3, 3, 0]
-    h1221 = two_body_coefficients[1, 2, 2, 1]
-    h2332 = two_body_coefficients[2, 3, 3, 2]
-    h0220 = two_body_coefficients[0, 2, 2, 0]
-    h2020 = two_body_coefficients[2, 0, 2, 0]
-    h1313 = two_body_coefficients[1, 3, 1, 3]
-    h3113 = two_body_coefficients[3, 1, 1, 3]
-    h0132 = two_body_coefficients[0, 1, 3, 2]
-    h0312 = two_body_coefficients[0, 3, 1, 2]
+    h0110 = 2 * two_body_coefficients[0, 1, 1, 0]
+    h0330 = 2 * two_body_coefficients[0, 3, 3, 0]
+    h1221 = 2 * two_body_coefficients[1, 2, 2, 1]
+    h2332 = 2 * two_body_coefficients[2, 3, 3, 2]
+    h0220 = 2 * two_body_coefficients[0, 2, 2, 0]
+    h2020 = 2 * two_body_coefficients[2, 0, 2, 0]
+    h1313 = 2 * two_body_coefficients[1, 3, 1, 3]
+    h1331 = 2 * two_body_coefficients[1, 3, 3, 1]
+    h0132 = 2 * two_body_coefficients[0, 1, 3, 2]
+    h0312 = 2 * two_body_coefficients[0, 3, 1, 2]
+    h0202 = 2 * two_body_coefficients[0, 2, 0, 2]
 
-    omega_1 = sum([h00, h11, h22, h33]) / 2 + (h0110 + h0330 + h1221 + h2332) / 4 + (h0220 - h2020) / 4 + (
-            h1313 - h3113) / 4
-    omega_2 = h00 / 2 + h0110 / 4 + h0330 / 4 + h0220 / 4 - h2020 / 4
+    print(f"""
+    h00 = {h00}, h11 = {h11}, h22 = {h22}, h33 = {h33}
+    h0110 = {h0110}, h0330 = {h0330}, h1221 = {h1221}, h2332 = {h2332}
+    h0220 = {h0220}, h2020 = {h2020}, h1313 = {h1313}, h1331 = {h1331}
+    h0132 = {h0132}, h0312 = {h0312}, h0202 = {h0202}
+    """)
+
+    omega_1 = sum([h00, h11, h22, h33]) / 2 + (h0110 + h0330 + h1221 + h2332) / 4 + (h0220 - h0202) / 4 + (
+            h1331 - h1313) / 4
+    omega_2 = - (h00 / 2 + h0110 / 4 + h0330 / 4 + h0220 / 4 - h0202 / 4)
     omega_3 = h0110 / 4
-    omega_4 = -(h22 / 2 + h1221 / 4 + h2332 / 4 + h0220 / 4 - h2020 / 4)
-    omega_5 = -(h11 / 2 + h0110 / 4 + h1221 / 4 + h1313 / 4 - h3113 / 4)
+    omega_4 = -(h22 / 2 + h1221 / 4 + h2332 / 4 + h0220 / 4 - h0202 / 4)
+    omega_5 = -(h11 / 2 + h0110 / 4 + h1221 / 4 + h1331 / 4 - h1313 / 4)
     omega_6 = (h0220 - h2020) / 4
     omega_7 = h2332 / 4
     omega_8 = h0132 / 4
     omega_9 = (h0132 - h0312) / 8
     omega_10 = h1221 / 4
-    omega_11 = (h1313 - h3113) / 4
-    omega_12 = -(h33 / 2 + h0330 / 4 + h2332 / 4 + h1313 / 4 - h3113 / 4)
+    omega_11 = (h1331 - h1313) / 4
+    omega_12 = -(h33 / 2 + h0330 / 4 + h2332 / 4 + h1331 / 4 - h1313 / 4)
     omega_13 = (h0132 + h0312) / 8
     omega_14 = (h0132 + h0312) / 8
     omega_15 = h0330 / 4
@@ -58,7 +93,8 @@ def calculate_overlap_integrals():
               omega_12, omega_13, omega_14, omega_15]
     return omegas
 
-#Example circuit from lecture slides Quantum Comunication& Computation Week 3
+
+# Example circuit from lecture slides Quantum Comunication& Computation Week 3
 def example_circuit():
     R_matrix = np.array([[0, -1j],
                          [1j, 0]])
@@ -251,19 +287,22 @@ def main():
                                      2.45417902e-16 - 3.46055651e-16j,
                                      -4.98914730e-17 + 3.15834335e-17j])
 
-        omegas = [-0.7980464206492508, 0.17771287465139946, 0.17059738328801055, -0.24274280513140506, 0.17771287465139946, 0.12293305056183801, 0.1762764080431962, 0.04475014401535165, 0.04475014401535165, 0.16768319457718966, 0.12293305056183801, -0.24274280513140506, 0.04475014401535165, 0.04475014401535165, 0.16768319457718966]
+        omegas = [-0.7980464206492508, 0.17771287465139946, 0.17059738328801055, -0.24274280513140506,
+                  0.17771287465139946, 0.12293305056183801, 0.1762764080431962, 0.04475014401535165,
+                  0.04475014401535165, 0.16768319457718966, 0.12293305056183801, -0.24274280513140506,
+                  0.04475014401535165, 0.04475014401535165, 0.16768319457718966]
 
         theta = [2 * omega * Dt for omega in omegas]
         n = 4
         initial_state = initial_state.data
-        qc = generate_Hamiltonian_circuit(n, theta)
+        # qc = generate_Hamiltonian_circuit(n, theta)
+        qc = get_H_qiskit()
         n_target = 4
     quantum_phase_estimation(initial_state, Dt, qc, n_ancilla, n_target)
 
 
 if __name__ == "__main__":
     main()
-
 
 """
 GROUND STATE: 
