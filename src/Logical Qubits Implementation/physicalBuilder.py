@@ -306,11 +306,11 @@ class twoQubitLogicBuilder(qasmBuilder):
         # Determine the rotation axis
         gate = ""
         if axis == "x":
-            gate = f"Rx q[{qubit}], {angle}"
+            gate =  [f"Rx q[{2 * qubit}], {angle / 2.0f}", f"Rx q[{2 * qubit + 1}], {angle / 2.0f}"]
         elif axis == "y":
-            gate = f"Ry q[{qubit}], {angle}"
+            gate =  [f"Ry q[{2 * qubit}], {angle / 2.0f}", f"Ry q[{2 * qubit + 1}], {angle / 2.0f}"]
         elif axis == "z":
-            gate = f"Rz q[{qubit}], {angle}"
+            gate =  [f"Rz q[{2 * qubit}], {angle / 2.0f}", f"Rz q[{2 * qubit + 1}], {angle / 2.0f}"]
 
         self._addGate_(gate)
         if sym:
