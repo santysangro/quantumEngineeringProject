@@ -4,10 +4,12 @@ from qiskit_algorithms import NumPyMinimumEigensolver
 from qiskit_nature.second_q.drivers import PySCFDriver
 from qiskit_nature.second_q.mappers import BravyiKitaevMapper, JordanWignerMapper
 from qiskit_nature.units import DistanceUnit
+from qiskit_nature.second_q.algorithms import ExcitedStatesEigensolver
 from qiskit_nature.second_q.algorithms import GroundStateEigensolver
+from qiskit_algorithms import NumPyEigensolver
 from qiskit_aer import StatevectorSimulator
 import matplotlib.pyplot as plt
-bond_lengths = np.array([0.7, 1.2, 1.3, 1.39, 1.4, 1.4011, 1.41, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2]) / 2
+bond_lengths = np.array([0.7])#, 1.2, 1.3, 1.39, 1.4, 1.4011, 1.41, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2]) / 2
 energy = []
 
 #REPLICATION OF THE HYDROGEN SIMULATION GROUND ENERGY AT DIFFERENT BOND LENGTHS FOLLOWING THE FINDINGS OF Yili Zhang (2022).
@@ -30,21 +32,24 @@ for bond_length in bond_lengths:
 
     second_q_op = hamiltonian.second_q_op()
     mapper = BravyiKitaevMapper()
-    solver = GroundStateEigensolver(
-        BravyiKitaevMapper(),
-        NumPyMinimumEigensolver(),
-    )
-    result = solver.solve(problem)
+    qubit_op = mapper.map(second_q_op)
 
-    ground_state_prep = result.eigenstates[0][0]
-    compiled = transpile(ground_state_prep, sim)
+    eigensolver = NumPyEigensolver(k=2)  # Find the ground state and the first excited state
+    excited_states_solver = ExcitedStatesEigensolver(mapper, eigensolver)
+    # Solve for the excited states
+    result = excited_states_solver.solve(problem)
+    state_prep = result.eigenstates[0][0] #1 = excited, 0 = ground
+
+    compiled = transpile(state_prep, sim)
     job = sim.run(compiled)
     state_vector_result = job.result()
     # Get statevector
     state_vector = state_vector_result.get_statevector(compiled)
+    print(state_vector)
     # Store the ground state energy for each bond length
-    energy.append(result.eigenvalues[0] + hamiltonian.nuclear_repulsion_energy)
-    print(f"Energy at bond length {bond_length}: {result.eigenvalues[0] + hamiltonian.nuclear_repulsion_energy}")
+
+    energy.append(result.eigenvalues[1] + hamiltonian.nuclear_repulsion_energy)
+    print(f"Energy at bond length {bond_length}: {result.eigenvalues[1]}") #+ hamiltonian.nuclear_repulsion_energy}")
 
 plt.scatter(bond_lengths, energy, marker="o", label="This Study")
 plt.xlabel('Bond length [$\mathrm{\AA}$]')

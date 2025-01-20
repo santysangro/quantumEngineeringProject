@@ -58,7 +58,6 @@ def calculate_overlap_integrals():
               omega_12, omega_13, omega_14, omega_15]
     return omegas
 
-
 #Example circuit from lecture slides Quantum Comunication& Computation Week 3
 def example_circuit():
     R_matrix = np.array([[0, -1j],
@@ -193,6 +192,7 @@ def quantum_phase_estimation(initial_state, Dt, qc, n_ancilla=3, n_target=4):
     for q in range(n_ancilla):
         qpe_circuit.reset(q)
         qpe_circuit.h(q)
+
     qpe_circuit.initialize(initial_state, qubits=list(range(n_ancilla, n_ancilla + n_target)))
     # Controlled-U operations using repeated applications of U
     for q in range(n_ancilla):
@@ -217,17 +217,17 @@ def quantum_phase_estimation(initial_state, Dt, qc, n_ancilla=3, n_target=4):
 
     # Calculate energy eigenvalue
     t = Dt  # Evolution time used in your unitary
-    energy = phase_decimal * 2 * np.pi / t
-
+    energy = - phase_decimal * 2 * np.pi / t
+    nuclear_repulsion_energy = 0.7559674441714287
     print(f"Most Frequent Result: {most_frequent_result}")
     print(f"Phase (Decimal): {phase_decimal}")
-    print(f"Energy Eigenvalue: {energy}")
+    print(f"Energy Eigenvalue: {energy + nuclear_repulsion_energy}")
 
 
 def main():
-    test_case = True
+    test_case = False
     Dt = 1
-    n_ancilla = 7
+    n_ancilla = 8
     if test_case:
         initial_state = np.array([1 / np.sqrt(2), -1j / np.sqrt(2)])
         qc = example_circuit()
@@ -251,20 +251,58 @@ def main():
                                      2.45417902e-16 - 3.46055651e-16j,
                                      -4.98914730e-17 + 3.15834335e-17j])
 
-        omegas = [-1.38503261201572, -0.4083196888649184, 0.08529869164400526, -0.009296478540293005,
-                  0.5312527394267565,
-                  0.061466525280919046, 0.08813820402159804, 0.022375072007675825, 0.0, 0.08384159728859487,
-                  -0.06146652528091903, 0.11363657202154508, 0.022375072007675825, 0.022375072007675825,
-                  0.08384159728859487]
+        omegas = [-0.7980464206492508, 0.17771287465139946, 0.17059738328801055, -0.24274280513140506, 0.17771287465139946, 0.12293305056183801, 0.1762764080431962, 0.04475014401535165, 0.04475014401535165, 0.16768319457718966, 0.12293305056183801, -0.24274280513140506, 0.04475014401535165, 0.04475014401535165, 0.16768319457718966]
 
         theta = [2 * omega * Dt for omega in omegas]
         n = 4
         initial_state = initial_state.data
         qc = generate_Hamiltonian_circuit(n, theta)
         n_target = 4
-
     quantum_phase_estimation(initial_state, Dt, qc, n_ancilla, n_target)
 
 
 if __name__ == "__main__":
     main()
+
+
+"""
+GROUND STATE: 
+initial_state = Statevector([-1.43242713e-16 - 3.42061922e-19j,
+                                     2.69077742e-16 + 1.31011834e-16j,
+                                     -6.13036438e-02 + 8.48454935e-02j,
+                                     -6.66979993e-17 - 2.45946145e-16j,
+                                     -5.83722787e-17 + 1.64383932e-17j,
+                                     -2.50090981e-16 - 3.34441110e-16j,
+                                     2.15239159e-16 - 7.78175101e-17j,
+                                     5.82438613e-01 - 8.06106921e-01j,
+                                     1.25880380e-16 + 7.29404981e-18j,
+                                     -1.06842552e-17 - 1.77982080e-16j,
+                                     9.95321351e-18 - 2.35111180e-17j,
+                                     1.03461020e-16 - 2.90948381e-16j,
+                                     3.28184906e-16 - 1.94749371e-16j,
+                                     9.02125371e-18 - 4.80773953e-17j,
+                                     2.45417902e-16 - 3.46055651e-16j,
+                                     -4.98914730e-17 + 3.15834335e-17j])
+E bond length 0.7 ground state = -1.13 (not including nuclear repulsion energy)
+                            
+EXCITED STATE: 
+initial_state = Statevector([-1.42965093e-17-4.74869138e-18j,
+              6.92830477e-15+4.77406071e-15j,
+             -1.98489648e-17+4.14077216e-17j,
+             -1.82153156e-15-6.56312244e-16j,
+              5.70005001e-16-1.50948627e-16j,
+             -1.42734596e-16+1.13579168e-16j,
+              1.85069225e-15+6.93802076e-16j,
+              1.09559587e-18+6.24897272e-18j,
+              1.19127514e-16-1.80123607e-17j,
+             -1.79595055e-17-1.96672094e-16j,
+              2.56420140e-18+2.89721510e-17j,
+              1.19184607e-02+8.16412167e-01j,
+              4.47687952e-01-3.64560861e-01j,
+              4.90838621e-15-7.21192017e-16j,
+             -3.07276076e-17-5.13694653e-17j,
+             -6.03166265e-16+6.61965784e-15j])
+
+
+E bond length 0.7 excited state = -1.2779 (not including nuclear repulsion energy)
+"""
