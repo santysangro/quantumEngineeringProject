@@ -371,11 +371,15 @@ class twoQubitLogicBuilder(qasmBuilder):
         if sym:
             self._pushGate_(gate)
 
-
+    
 def get_builder_type_by_name(s):
     if s == "physical":
         return qasmBuilder
     elif s == "2 qubit":
         return twoQubitLogicBuilder
+
+    # !! Surface Codes are problematic, pending discussion
+    # elif s == "surface":
+    #    return surfaceCodeLogicBuilder
     else:
         return None
