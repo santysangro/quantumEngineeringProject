@@ -1,2 +1,8 @@
 qiskit
 projectq
+qiskit-algorithms
+qiskit_nature
+qiskit_aer
+pyscf
+matplotlib
+openfermionpyscf
