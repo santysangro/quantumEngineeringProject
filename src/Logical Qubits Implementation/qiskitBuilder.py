@@ -234,8 +234,164 @@ class qiskitBuilder():
 
         
         # Determine the rotation axis
-        self.qs.h(qubit)
+        self.qs.h(2 * qubit)
+        self.qs.cx(2 * qubit, 2 * qubit + 1)
         if sym:
-            self._pushGate_(lambda: self.qs.h(qubit))
+            self._pushGate_([lambda: self.qs.h(2 * qubit), lambda: self.qs.cx(2 * qubit, 2 * qubit + 1)])
+
+    """
+    Adds Hadamard gate to the specified (logical) qubits. Supports parallel lists
+    as arguments for multiple gates.
+    """
+    @autoPopDecorator
+    def addP(self, qubit, angle, sym = False):
+
+        # Handle multiple callings
+        if type(qubit) is list and type(angle) is list and len(qubit) == len(angle):
+
+            for i in range(0, len(qubit)):
+                self.addP(qubit[i], angle[i], sym)
+                self.embed()
+            return
+
+        
+        # Determine the rotation axis
+        self.qs.p(2 * qubit, angle)
+        if sym:
+            self._pushGate_(lambda: self.qs.p(2 * qubit, angle))
+
+    @autoPopDecorator
+    def addCP(self, control, target, angle, sym = False):
+
+        # Handle multiple callings
+        if type(control) is list and type(target) is list and type(angle) is list and len(qubit) == len(angle):
+
+            for i in range(0, len(qubit)):
+                self.addCP(control[i], target[i], angle[i], sym)
+                self.embed()
+            return
+
+        
+        self.qs.cp(2 * control, 2 * target, angle)
+        
+        if sym:
+            self._pushGate_(lambda: self.qs.cp(2 * control, 2 * target, angle))
+
+def generateHamiltonian(theta):
+    # Build a hamiltonian
+    hamiltonianBuilder = qiskitBuilder(4)
 
     
+    # First Part
+    hamiltonianBuilder.addCPauli(["x"] * 3, [0, 1, 2], [1, 2, 3], sym=True)
+    
+    hamiltonianBuilder.embed()
+    hamiltonianBuilder.addP(3, theta[0])
+    hamiltonianBuilder.pop(n = 3)
+
+    hamiltonianBuilder.addRotation(["z"] * 3, [0, 1, 2], [theta[1], theta[2], theta[3]])
+    
+    hamiltonianBuilder.addCPauli("x", 0, 1, sym = True)
+
+    hamiltonianBuilder.embed()
+    hamiltonianBuilder.addRotation("z", 1, theta[4])
+    hamiltonianBuilder.pop()
+
+    # Second Part
+    
+    hamiltonianBuilder.addCPauli("x", 0, 2, sym = True)
+
+    hamiltonianBuilder.embed()
+    hamiltonianBuilder.addRotation("z", 2, theta[5])
+    hamiltonianBuilder.pop()
+
+    hamiltonianBuilder.addCPauli("x", 1, 3, sym = True)
+
+    hamiltonianBuilder.embed()
+    hamiltonianBuilder.addRotation("z", 3, theta[6])
+    hamiltonianBuilder.pop()
+
+    hamiltonianBuilder.addH([0,2], sym=True)
+
+    hamiltonianBuilder.embed()
+
+    hamiltonianBuilder.addCPauli(["x"] * 2, [0, 1], [1, 2], sym=True)
+    
+    hamiltonianBuilder.embed()
+    hamiltonianBuilder.addRotation("z", 2, theta[7])
+    hamiltonianBuilder.pop(n = 4)
+
+    hamiltonianBuilder.addRotation("x", [0,2], [0.785] * 2)
+
+    hamiltonianBuilder.addCPauli(["x"] * 2, [0, 1], [1, 2], sym=True)
+    
+    hamiltonianBuilder.embed()
+    hamiltonianBuilder.addRotation("z", 2, theta[8])
+    hamiltonianBuilder.pop(n = 2)
+
+    hamiltonianBuilder.addRotation("x", [0,2], [-0.785] * 2)
+
+    hamiltonianBuilder.addCPauli(["x"] * 2, [0, 1], [1, 2], sym=True)
+    
+    hamiltonianBuilder.embed()
+    hamiltonianBuilder.addRotation("z", 2, theta[9])
+    hamiltonianBuilder.pop(n = 2)
+
+
+    # Third Part
+    hamiltonianBuilder.addCPauli(["x"] * 2, [0, 2], [2, 3], sym=True)
+    
+    hamiltonianBuilder.embed()
+    hamiltonianBuilder.addRotation("z", 3, theta[10])
+    hamiltonianBuilder.pop(n = 2)
+
+    hamiltonianBuilder.addCPauli(["x"] * 2, [1, 2], [2, 3], sym=True)
+    
+    hamiltonianBuilder.embed()
+    hamiltonianBuilder.addRotation("z", 3, theta[11])
+    hamiltonianBuilder.pop(n = 2)
+
+    hamiltonianBuilder.addH([0,2], sym=True)
+
+    hamiltonianBuilder.embed()
+
+    hamiltonianBuilder.addCPauli(["x"] * 3, [0, 1, 2], [1, 2, 3], sym=True)
+    
+    hamiltonianBuilder.embed()
+    hamiltonianBuilder.addRotation("z", 3, theta[12])
+    hamiltonianBuilder.pop(n = 5)
+
+    hamiltonianBuilder.addRotation("x", [0,2], [0.785] * 2)
+
+    hamiltonianBuilder.addCPauli(["x"] * 3, [0, 1, 2], [1, 2, 3], sym=True)
+    
+    hamiltonianBuilder.embed()
+    hamiltonianBuilder.addRotation("z", 3, theta[13])
+    hamiltonianBuilder.pop(n = 3)
+
+    hamiltonianBuilder.addRotation("x", [0,2], [-0.785] * 2)
+
+    # Fourth Part
+    hamiltonianBuilder.addCPauli(["x"] * 3, [0, 1, 2], [1, 2, 3], sym=True)
+    
+    hamiltonianBuilder.embed()
+    hamiltonianBuilder.addRotation("z", 3, theta[14])
+    hamiltonianBuilder.pop(n = 3)
+
+    hamiltonianBuilder.addH([0, 1, 2, 3])
+    return hamiltonianBuilder.build()
+
+
+def generateQFT(num_logical):
+    
+    qftBuilder = qiskitBuilder(num_logical)
+    
+    #for (target in range(0, num_logical)):
+    #    qftBuilder.addH(target)
+    #    for (control in range(target + 1, num_logical)):
+            
+
+
+
+
+
