@@ -9,7 +9,7 @@ from qiskit_nature.second_q.algorithms import GroundStateEigensolver
 from qiskit_algorithms import NumPyEigensolver
 from qiskit_aer import StatevectorSimulator
 import matplotlib.pyplot as plt
-bond_lengths = np.array([0.7])#, 1.2, 1.3, 1.39, 1.4, 1.4011, 1.41, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2]) / 2
+bond_lengths = np.array([1,2, 3, 4, 5, 6]) / 2.0
 energy = []
 
 #REPLICATION OF THE HYDROGEN SIMULATION GROUND ENERGY AT DIFFERENT BOND LENGTHS FOLLOWING THE FINDINGS OF Yili Zhang (2022).

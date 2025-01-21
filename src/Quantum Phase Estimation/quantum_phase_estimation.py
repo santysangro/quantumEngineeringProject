@@ -10,10 +10,11 @@ from qiskit_nature.second_q.drivers import PySCFDriver
 from qiskit_nature.second_q.mappers import BravyiKitaevMapper
 from qiskit.circuit.library import PauliEvolutionGate
 from qiskit.quantum_info import SparsePauliOp
+from qiskit.synthesis import SuzukiTrotter
 
 # GLOBALS:
 sim = StatevectorSimulator()
-geometry = [('H', (0.0, 0.0, 0.0)), ('H', (0.0, 0.0, 0.7))]
+geometry = [('H', (0.0, 0.0, 0.0)), ('H', (0.0, 0.0, 2.5))]
 basis = 'sto-3g'
 multiplicity = 1
 charge = 0
@@ -32,10 +33,13 @@ def get_H_qiskit():
     mapper = BravyiKitaevMapper()
     qubit_op = mapper.map(second_q_op)
     # Convert the Hamiltonian to a SparsePauliOp for evolution
+
     pauli_op = SparsePauliOp.from_list(qubit_op.to_list())
     time = 1.0  # Set the time for evolution (arbitrary units)
     # Create the time evolution circuit
-    evolution_gate = PauliEvolutionGate(pauli_op, time)
+    suzuki = SuzukiTrotter(order=2, reps=1)  # 3 repetitions of second-order Suzuki
+    evolution_gate = PauliEvolutionGate(pauli_op, time, synthesis=suzuki)
+    # evolution_gate = PauliEvolutionGate(pauli_op, time)
     n_qubits = qubit_op.num_qubits
     evolution_circuit = QuantumCircuit(n_qubits)
     evolution_circuit.append(evolution_gate, range(n_qubits))
@@ -81,7 +85,7 @@ def calculate_overlap_integrals():
     omega_6 = (h0220 - h2020) / 4
     omega_7 = h2332 / 4
     omega_8 = h0132 / 4
-    omega_9 = (h0132 - h0312) / 8
+    omega_9 = (h0132 + h0312) / 8
     omega_10 = h1221 / 4
     omega_11 = (h1331 - h1313) / 4
     omega_12 = -(h33 / 2 + h0330 / 4 + h2332 / 4 + h1331 / 4 - h1313 / 4)
@@ -110,6 +114,7 @@ def generate_Hamiltonian_circuit(n, theta):
 
     qc = QuantumCircuit(q)
 
+    # Forward iteration
     qc.cx(0, 1)
     qc.cx(1, 2)
     qc.cx(2, 3)
@@ -210,15 +215,118 @@ def generate_Hamiltonian_circuit(n, theta):
     qc.cx(0, 1)
     qc.cx(1, 2)
     qc.cx(2, 3)
-    qc.rz(theta[14], 3)
+    qc.rz(2*theta[14], 3)
+    qc.cx(2, 3)
+    qc.cx(1, 2)
+    qc.cx(0, 1)
+
+    # Backward iteration
+
+    # qc.cx(0, 1)
+    # qc.cx(1, 2)
+    # qc.cx(2, 3)
+    # qc.rz(theta[14], 3)
+    # qc.cx(2, 3)
+    # qc.cx(1, 2)
+    # qc.cx(0, 1)
+
+    qc.rx(0.785, 0)
+    qc.rx(0.785, 2)
+
+    qc.cx(0, 1)
+    qc.cx(1, 2)
+    qc.cx(2, 3)
+    qc.rz(theta[13], 3)
+    qc.cx(2, 3)
+    qc.cx(1, 2)
+    qc.cx(0, 1)
+
+    qc.rx(-0.785, 0)
+    qc.rx(-0.785, 2)
+
+    qc.h(0)
+    qc.h(2)
+    qc.cx(0, 1)
+    qc.cx(1, 2)
+    qc.cx(2, 3)
+    qc.rz(theta[12], 3)
     qc.cx(2, 3)
     qc.cx(1, 2)
     qc.cx(0, 1)
 
     qc.h(0)
-    qc.h(1)
     qc.h(2)
-    qc.h(3)
+
+    qc.cx(1, 2)
+    qc.cx(2, 3)
+    qc.rz(theta[11], 3)
+    qc.cx(2, 3)
+    qc.cx(1, 2)
+
+    qc.cx(0, 2)
+    qc.cx(2, 3)
+    qc.rz(theta[10], 3)
+    qc.cx(2, 3)
+    qc.cx(0, 2)
+
+    qc.cx(0, 1)
+    qc.cx(1, 2)
+    qc.rz(theta[9], 2)
+    qc.cx(1, 2)
+    qc.cx(0, 1)
+
+    qc.rx(0.785, 0)
+    qc.rx(0.785, 2)
+
+    qc.cx(0, 1)
+    qc.cx(1, 2)
+    qc.rz(theta[8], 2)
+    qc.cx(1, 2)
+    qc.cx(0, 1)
+
+    qc.rx(-0.785, 0)
+    qc.rx(-0.785, 2)
+
+    qc.h(0)
+    qc.h(2)
+    qc.cx(0, 1)
+    qc.cx(1, 2)
+
+    qc.rz(theta[7], 2)
+    qc.cx(1, 2)
+    qc.cx(0, 1)
+
+    qc.h(0)
+    qc.h(2)
+
+    qc.cx(1, 3)
+    qc.rz(theta[6], 3)
+    qc.cx(1, 3)
+
+    qc.cx(0, 2)
+    qc.rz(theta[5], 2)
+    qc.cx(0, 2)
+
+    qc.cx(0, 1)
+    qc.rz(theta[4], 1)
+    qc.cx(0, 1)
+
+    qc.rz(theta[3], 2)
+    qc.rz(theta[2], 1)
+    qc.rz(theta[1], 0)
+
+    qc.cx(0, 1)
+    qc.cx(1, 2)
+    qc.cx(2, 3)
+    Ri_matrix = np.array([[np.exp(-1j * theta[0] / 2), 0],
+                          [0, np.exp(-1j * theta[0] / 2)]])
+    unitary_gate = Operator(Ri_matrix)
+
+    qc.append(unitary_gate, [3])
+    qc.cx(2, 3)
+    qc.cx(1, 2)
+    qc.cx(0, 1)
+
     return qc
 
 
@@ -254,10 +362,11 @@ def quantum_phase_estimation(initial_state, Dt, qc, n_ancilla=3, n_target=4):
     # Calculate energy eigenvalue
     t = Dt  # Evolution time used in your unitary
     energy = - phase_decimal * 2 * np.pi / t
-    nuclear_repulsion_energy = 0.7559674441714287
+    # nuclear_repulsion_energy = 0.7559674441714287
     print(f"Most Frequent Result: {most_frequent_result}")
     print(f"Phase (Decimal): {phase_decimal}")
-    print(f"Energy Eigenvalue: {energy + nuclear_repulsion_energy}")
+    print(f"Energy Eigenvalue: {energy}")
+    # print(f"Energy Eigenvalue: {energy + nuclear_repulsion_energy}")
 
 
 def main():
@@ -270,22 +379,22 @@ def main():
 
         n_target = 1
     else:
-        initial_state = Statevector([-1.43242713e-16 - 3.42061922e-19j,
-                                     2.69077742e-16 + 1.31011834e-16j,
-                                     -6.13036438e-02 + 8.48454935e-02j,
-                                     -6.66979993e-17 - 2.45946145e-16j,
-                                     -5.83722787e-17 + 1.64383932e-17j,
-                                     -2.50090981e-16 - 3.34441110e-16j,
-                                     2.15239159e-16 - 7.78175101e-17j,
-                                     5.82438613e-01 - 8.06106921e-01j,
-                                     1.25880380e-16 + 7.29404981e-18j,
-                                     -1.06842552e-17 - 1.77982080e-16j,
-                                     9.95321351e-18 - 2.35111180e-17j,
-                                     1.03461020e-16 - 2.90948381e-16j,
-                                     3.28184906e-16 - 1.94749371e-16j,
-                                     9.02125371e-18 - 4.80773953e-17j,
-                                     2.45417902e-16 - 3.46055651e-16j,
-                                     -4.98914730e-17 + 3.15834335e-17j])
+        initial_state = Statevector([-3.16262715e-21+3.38437409e-21j,
+                                     2.29213695e-16-5.20230786e-15j,
+                                     -4.27062099e-01+4.72437537e-01j,
+                                     2.80339095e-15-4.09991532e-15j,
+                                     -2.07457153e-14+1.10136114e-15j,
+                                     8.66477592e-17-8.31505363e-18j,
+                                     -3.09591429e-15+4.26914799e-15j,
+                                     5.17011419e-01-5.71943992e-01j,
+                                     -1.29201427e-17+4.20662443e-19j,
+                                     -2.77740170e-17-1.14920972e-17j,
+                                     -4.81507537e-17-1.79765987e-17j,
+                                     2.92687512e-16+1.75008251e-16j,
+                                     1.36217105e-17+2.14059866e-17j,
+                                     1.07183279e-16-1.76719978e-16j,
+                                     1.17797929e-16+9.74401421e-17j,
+                                     3.90362083e-17+2.39320119e-16j])
 
         omegas = [-0.81261,
                   0.171201,
@@ -303,11 +412,13 @@ def main():
                   0.04532175,
                   0.165868]
 
-        theta = [2 * omega * Dt for omega in omegas]
+        omegas = calculate_overlap_integrals()
+        print(omegas)
+        theta = [omega * Dt for omega in omegas]
         n = 4
         initial_state = initial_state.data
-        # qc = generate_Hamiltonian_circuit(n, theta)
-        qc = get_H_qiskit()
+        qc = generate_Hamiltonian_circuit(n, theta)
+        # qc = get_H_qiskit()
         n_target = 4
     quantum_phase_estimation(initial_state, Dt, qc, n_ancilla, n_target)
 
