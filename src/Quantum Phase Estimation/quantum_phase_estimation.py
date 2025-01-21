@@ -11,13 +11,54 @@ from qiskit_nature.second_q.mappers import BravyiKitaevMapper
 from qiskit.circuit.library import PauliEvolutionGate
 from qiskit.quantum_info import SparsePauliOp
 from qiskit.synthesis import SuzukiTrotter
+import openfermion as of
+import openfermionpyscf as ofpyscf
+from scipy.sparse import linalg
 
 # GLOBALS:
 sim = StatevectorSimulator()
-geometry = [('H', (0.0, 0.0, 0.0)), ('H', (0.0, 0.0, 2.5))]
+geometry = [('H', (0.0, 0.0, 0.0)), ('H', (0.0, 0.0, 0.7))]
 basis = 'sto-3g'
 multiplicity = 1
 charge = 0
+
+
+def get_H_paper():
+    hamiltonian = ofpyscf.generate_molecular_hamiltonian(
+        geometry, basis, multiplicity, charge)
+
+    # Convert to a FermionOperator
+    hamiltonian_ferm_op = of.get_fermion_operator(hamiltonian)
+    hamiltonian_bk = of.bravyi_kitaev(hamiltonian_ferm_op)
+    hamiltonian_bk_sparse = of.get_sparse_operator(hamiltonian_bk)
+    eigs, state = linalg.eigsh(hamiltonian_bk_sparse, k=1, which='SA')
+    print(state)
+    # Convert to Scipy sparse matrix
+    terms = hamiltonian_bk.terms  # Returns a dictionary of Pauli strings and coefficients
+    # Convert the OpenFermion QubitOperator to Qiskit Pauli sum format
+    converted_list = []
+    for term, coeff in terms.items():
+        # Start with a list of 'I's representing the identity on each qubit
+        pauli_str = ['I'] * 4
+
+        # Apply Pauli operators at the appropriate positions
+        for qubit, op in term:
+            pauli_str[(3 - qubit)] = op
+
+        # Convert the list into a string (like 'IIII', 'ZZZI', etc.)
+        pauli_str = ''.join(pauli_str)
+        # Append the Pauli string and its corresponding coefficient as a tuple
+        converted_list.append((pauli_str, coeff))
+
+    pauli_op = SparsePauliOp.from_list(converted_list)
+    # Compute ground energy
+    time = 1.0  # Set the time for evolution (arbitrary units)
+    # Create the time evolution circuit
+    evolution_gate = PauliEvolutionGate(pauli_op, time)
+    n_qubits = 4
+    evolution_circuit = QuantumCircuit(n_qubits)
+    evolution_circuit.append(evolution_gate, range(n_qubits))
+    return evolution_circuit
 
 
 def get_H_qiskit():
@@ -215,7 +256,7 @@ def generate_Hamiltonian_circuit(n, theta):
     qc.cx(0, 1)
     qc.cx(1, 2)
     qc.cx(2, 3)
-    qc.rz(2*theta[14], 3)
+    qc.rz(2 * theta[14], 3)
     qc.cx(2, 3)
     qc.cx(1, 2)
     qc.cx(0, 1)
@@ -326,7 +367,6 @@ def generate_Hamiltonian_circuit(n, theta):
     qc.cx(2, 3)
     qc.cx(1, 2)
     qc.cx(0, 1)
-
     return qc
 
 
@@ -372,53 +412,37 @@ def quantum_phase_estimation(initial_state, Dt, qc, n_ancilla=3, n_target=4):
 def main():
     test_case = False
     Dt = 1
-    n_ancilla = 8
+    n_ancilla = 7
     if test_case:
         initial_state = np.array([1 / np.sqrt(2), -1j / np.sqrt(2)])
         qc = example_circuit()
 
         n_target = 1
     else:
-        initial_state = Statevector([-3.16262715e-21+3.38437409e-21j,
-                                     2.29213695e-16-5.20230786e-15j,
-                                     -4.27062099e-01+4.72437537e-01j,
-                                     2.80339095e-15-4.09991532e-15j,
-                                     -2.07457153e-14+1.10136114e-15j,
-                                     8.66477592e-17-8.31505363e-18j,
-                                     -3.09591429e-15+4.26914799e-15j,
-                                     5.17011419e-01-5.71943992e-01j,
-                                     -1.29201427e-17+4.20662443e-19j,
-                                     -2.77740170e-17-1.14920972e-17j,
-                                     -4.81507537e-17-1.79765987e-17j,
-                                     2.92687512e-16+1.75008251e-16j,
-                                     1.36217105e-17+2.14059866e-17j,
-                                     1.07183279e-16-1.76719978e-16j,
-                                     1.17797929e-16+9.74401421e-17j,
-                                     3.90362083e-17+2.39320119e-16j])
-
-        omegas = [-0.81261,
-                  0.171201,
-                  0.16862325,
-                  -0.2227965,
-                  0.171201,
-                  0.12054625,
-                  0.17434925,
-                  0.04532175,
-                  0.04532175,
-                  0.165868,
-                  0.12054625,
-                  -0.2227965,
-                  0.04532175,
-                  0.04532175,
-                  0.165868]
+        initial_state =  Statevector([-1.42965093e-17-4.74869138e-18j,
+              6.92830477e-15+4.77406071e-15j,
+             -1.98489648e-17+4.14077216e-17j,
+             -1.82153156e-15-6.56312244e-16j,
+              5.70005001e-16-1.50948627e-16j,
+             -1.42734596e-16+1.13579168e-16j,
+              1.85069225e-15+6.93802076e-16j,
+              1.09559587e-18+6.24897272e-18j,
+              1.19127514e-16-1.80123607e-17j,
+             -1.79595055e-17-1.96672094e-16j,
+              2.56420140e-18+2.89721510e-17j,
+              1.19184607e-02+8.16412167e-01j,
+              4.47687952e-01-3.64560861e-01j,
+              4.90838621e-15-7.21192017e-16j,
+             -3.07276076e-17-5.13694653e-17j,
+             -6.03166265e-16+6.61965784e-15j])
 
         omegas = calculate_overlap_integrals()
-        print(omegas)
         theta = [omega * Dt for omega in omegas]
         n = 4
         initial_state = initial_state.data
         qc = generate_Hamiltonian_circuit(n, theta)
-        # qc = get_H_qiskit()
+        #qc = get_H_qiskit()
+        # qc = get_H_paper()
         n_target = 4
     quantum_phase_estimation(initial_state, Dt, qc, n_ancilla, n_target)
 
@@ -444,7 +468,7 @@ initial_state = Statevector([-1.43242713e-16 - 3.42061922e-19j,
                                      9.02125371e-18 - 4.80773953e-17j,
                                      2.45417902e-16 - 3.46055651e-16j,
                                      -4.98914730e-17 + 3.15834335e-17j])
-E bond length 0.7 ground state = -1.13 (not including nuclear repulsion energy)
+E bond length 0.7 ground state = -1.892 (not including nuclear repulsion energy)
                             
 EXCITED STATE: 
 initial_state = Statevector([-1.42965093e-17-4.74869138e-18j,

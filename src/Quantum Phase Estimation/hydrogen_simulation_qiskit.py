@@ -9,7 +9,7 @@ from qiskit_nature.second_q.algorithms import GroundStateEigensolver
 from qiskit_algorithms import NumPyEigensolver
 from qiskit_aer import StatevectorSimulator
 import matplotlib.pyplot as plt
-bond_lengths = np.array([1,2, 3, 4, 5, 6]) / 2.0
+bond_lengths = np.array([0.7])#,2, 3, 4, 5, 6]) / 2.0
 energy = []
 
 #REPLICATION OF THE HYDROGEN SIMULATION GROUND ENERGY AT DIFFERENT BOND LENGTHS FOLLOWING THE FINDINGS OF Yili Zhang (2022).
@@ -48,8 +48,8 @@ for bond_length in bond_lengths:
     print(state_vector)
     # Store the ground state energy for each bond length
 
-    energy.append(result.eigenvalues[1] + hamiltonian.nuclear_repulsion_energy)
-    print(f"Energy at bond length {bond_length}: {result.eigenvalues[1]}") #+ hamiltonian.nuclear_repulsion_energy}")
+    energy.append(result.eigenvalues[0] + hamiltonian.nuclear_repulsion_energy)
+    print(f"Energy at bond length {bond_length}: {result.eigenvalues[0]}") #+ hamiltonian.nuclear_repulsion_energy}")
 
 plt.scatter(bond_lengths, energy, marker="o", label="This Study")
 plt.xlabel('Bond length [$\mathrm{\AA}$]')
