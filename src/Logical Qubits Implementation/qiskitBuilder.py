@@ -52,7 +52,7 @@ class qiskitBuilder():
 
     def appendCircuit(qc, min_qubit, max_qubit, control_qubit = None):
         if (control_qubit == None):
-            self.qs.append(qc, list(range(2 * min_qubit, 2 * max_qubit + 1))
+            self.qs.append(qc, list(range(2 * min_qubit, 2 * max_qubit + 1)))
         else:
             self.qs.append(qc, [2 * control_qubit, 2 * control_qubit + 1] + list(range(2 * min_qubit, 2 * max_qubit + 1)))
         
@@ -124,7 +124,7 @@ class qiskitBuilder():
                 
         elif axis == "z":
             # Z_L = Z_1 X_2 (Transversal)
-            self.qs.y(2 * qubit)
+            self.qs.z(2 * qubit)
             self.qs.x(2 * qubit + 1)
             if sym:
                 self._pushGate_([lambda: self.qs.x(2 * qubit + 1), lambda: self.qs.z(2 * qubit)])
@@ -264,18 +264,37 @@ class qiskitBuilder():
     def addCP(self, control, target, angle, sym = False):
 
         # Handle multiple callings
-        if type(control) is list and type(target) is list and type(angle) is list and len(qubit) == len(angle):
+        if type(control) is list and type(target) is list and type(angle) is list and len(control) == len(angle):
 
-            for i in range(0, len(qubit)):
+            for i in range(0, len(control)):
                 self.addCP(control[i], target[i], angle[i], sym)
                 self.embed()
             return
 
-        
-        self.qs.cp(2 * control, 2 * target, angle)
+        self.qs.cp(angle, 2 * control, 2 * target)
         
         if sym:
-            self._pushGate_(lambda: self.qs.cp(2 * control, 2 * target, angle))
+            self._pushGate_(lambda: self.qs.cp(angle, 2 * control, 2 * target))
+    
+    """
+    Adds swap gate to the specified (logical) qubits. Supports parallel lists
+    as arguments for multiple gates.
+    """
+    @autoPopDecorator
+    def addSwap(self, qubit1, qubit2, sym = False):
+        # Handle multiple callings
+        if type(qubit1) is list and type(qubit2) is list and len(qubit1) == len(qubit2):
+
+            for i in range(0, len(qubit1)):
+                self.addSwap(qubit1[i], qubit2[i], sym)
+                self.embed()
+            return
+
+        # Swap(Q1_L, Q2_L) = Swap(Q11_L, Q12_L, Q21_L, Q22_L) => Q21_L Q22_L Q11_L Q12_L     
+        self.qs.swap(2 * qubit1, 2 * qubit2)
+        self.qs.swap(2 * qubit1 + 1, 2 * qubit2 + 1)
+        if sym:
+            self._pushGate_([lambda: self.qs.swap(2 * qubit1 + 1, 2 * qubit2 + 1), lambda: self.qs.swap(2 * qubit1, 2 * qubit2)])
 
 def generateHamiltonian(theta):
     # Build a hamiltonian
@@ -381,17 +400,48 @@ def generateHamiltonian(theta):
     hamiltonianBuilder.addH([0, 1, 2, 3])
     return hamiltonianBuilder.build()
 
-
 def generateQFT(num_logical):
-    
+    """
+    Generates a Quantum Fourier Transform (QFT) circuit for the given number of logical qubits.
+    """
     qftBuilder = qiskitBuilder(num_logical)
+
+    # Iterate over each target qubit
+    for target in range(num_logical):
+        # Add a Hadamard gate to the target qubit
+        qftBuilder.addH(target)
+
+        # Add controlled phase gates with decreasing angles
+        for control in range(target + 1, num_logical):
+            angle = np.pi / (2 ** (control - target + 1))
+            qftBuilder.addCP(target, control, angle)
+
+    # Add a final step to reverse the qubit order for QFT output
+    for i in range(num_logical // 2):
+        #qftBuilder.qs.swap(i * 2, (num_logical - 1 - i) * 2)
+        #qftBuilder.qs.swap(i * 2 + 1, (num_logical - 1 - i) * 2 + 1)
+        qftBuilder.addSwap(i, (num_logical - 1 - i))
+
+    return qftBuilder.build()
+
+def generateInverseQFT(num_logical):
+    """
+    Generates a Quantum Fourier Transform (QFT) circuit for the given number of logical qubits.
+    """
+    qftBuilder = qiskitBuilder(num_logical)
+    # Reverse the qubit order for QFT output
+    for i in range(num_logical // 2):
+        #qftBuilder.qs.swap(i * 2, (num_logical - 1 - i) * 2)
+        #qftBuilder.qs.swap(i * 2 + 1, (num_logical - 1 - i) * 2 + 1)
+        qftBuilder.addSwap(i, (num_logical - 1 - i))
     
-    #for (target in range(0, num_logical)):
-    #    qftBuilder.addH(target)
-    #    for (control in range(target + 1, num_logical)):
-            
+    # Iterate over each target qubit
+    for target in range(num_logical - 1, -1, -1):
+        # Add controlled phase gates with decreasing angles
+        for control in range(num_logical - 1, target, -1):
+            angle = np.pi / (2 ** (control - target + 1))
+            qftBuilder.addCP(target, control, angle)
+        # Add a Hadamard gate to the target qubit
+        qftBuilder.addH(target)
 
-
-
-
-
+    return qftBuilder.build()
