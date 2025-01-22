@@ -414,7 +414,7 @@ def generateQFT(num_logical):
         # Add controlled phase gates with decreasing angles
         for control in range(target + 1, num_logical):
             angle = np.pi / (2 ** (control - target + 1))
-            qftBuilder.addCP(target, control, angle)
+            qftBuilder.addCP(control, target, angle)
 
     # Add a final step to reverse the qubit order for QFT output
     for i in range(num_logical // 2):
@@ -440,7 +440,7 @@ def generateInverseQFT(num_logical):
         # Add controlled phase gates with decreasing angles
         for control in range(num_logical - 1, target, -1):
             angle = np.pi / (2 ** (control - target + 1))
-            qftBuilder.addCP(target, control, angle)
+            qftBuilder.addCP(control, target, angle)
         # Add a Hadamard gate to the target qubit
         qftBuilder.addH(target)
 
