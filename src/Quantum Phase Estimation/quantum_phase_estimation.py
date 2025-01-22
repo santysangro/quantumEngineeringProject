@@ -370,6 +370,23 @@ def generate_Hamiltonian_circuit(n, theta):
     return qc
 
 
+def suzuki_approx(k, n, theta):
+    uk = 1 / (4 - 4 ** (1 / (2 * k - 1)))
+    theta1 = [2 * uk * value for value in theta]
+    first_term = generate_Hamiltonian_circuit(n, theta1)
+    theta2 = [(1 - 4 * uk) * value for value in theta]
+    second_term = generate_Hamiltonian_circuit(n, theta2)
+    third_term = generate_Hamiltonian_circuit(n, theta1)
+    q = QuantumRegister(n)
+    quantum_circuit = QuantumCircuit(q)
+    quantum_circuit.compose(first_term, inplace=True)
+    quantum_circuit.compose(second_term, inplace=True)
+    quantum_circuit.compose(third_term, inplace=True)
+    # quantum_circuit.draw(output="mpl")
+    # plt.show()
+    return quantum_circuit
+
+
 def quantum_phase_estimation(initial_state, Dt, qc, n_ancilla=3, n_target=4):
     qpe_circuit = QuantumCircuit(n_ancilla + n_target, n_ancilla)
 
@@ -400,8 +417,7 @@ def quantum_phase_estimation(initial_state, Dt, qc, n_ancilla=3, n_target=4):
     phase_decimal = int(most_frequent_result, 2) / (2 ** n_ancilla)
 
     # Calculate energy eigenvalue
-    t = Dt  # Evolution time used in your unitary
-    energy = - phase_decimal * 2 * np.pi / t
+    energy = - phase_decimal * 2 * np.pi / Dt
     # nuclear_repulsion_energy = 0.7559674441714287
     print(f"Most Frequent Result: {most_frequent_result}")
     print(f"Phase (Decimal): {phase_decimal}")
@@ -412,39 +428,46 @@ def quantum_phase_estimation(initial_state, Dt, qc, n_ancilla=3, n_target=4):
 def main():
     test_case = False
     Dt = 1
+    n = 4
     n_ancilla = 7
     if test_case:
         initial_state = np.array([1 / np.sqrt(2), -1j / np.sqrt(2)])
         qc = example_circuit()
 
-        n_target = 1
+        n = 1
     else:
-        initial_state =  Statevector([-1.42965093e-17-4.74869138e-18j,
-              6.92830477e-15+4.77406071e-15j,
-             -1.98489648e-17+4.14077216e-17j,
-             -1.82153156e-15-6.56312244e-16j,
-              5.70005001e-16-1.50948627e-16j,
-             -1.42734596e-16+1.13579168e-16j,
-              1.85069225e-15+6.93802076e-16j,
-              1.09559587e-18+6.24897272e-18j,
-              1.19127514e-16-1.80123607e-17j,
-             -1.79595055e-17-1.96672094e-16j,
-              2.56420140e-18+2.89721510e-17j,
-              1.19184607e-02+8.16412167e-01j,
-              4.47687952e-01-3.64560861e-01j,
-              4.90838621e-15-7.21192017e-16j,
-             -3.07276076e-17-5.13694653e-17j,
-             -6.03166265e-16+6.61965784e-15j])
+        initial_state = Statevector([-5.46306871e-16 - 1.10677192e-18j,
+                                     -4.15840494e-17 + 7.18143166e-18j,
+                                     -6.13036438e-02 + 8.48454935e-02j,
+                                     -6.85424045e-18 - 5.47086398e-17j,
+                                     -4.43003096e-17 - 6.27824455e-18j,
+                                     -3.52575373e-17 - 1.03715200e-16j,
+                                     7.06857837e-17 - 7.84474487e-18j,
+                                     5.82438613e-01 - 8.06106921e-01j,
+                                     -1.04118493e-17 - 2.57393164e-18j,
+                                     -9.31158148e-18 - 1.91883772e-16j,
+                                     2.24375784e-17 + 4.01088335e-17j,
+                                     3.96293736e-18 + 3.47688818e-17j,
+                                     -4.44809564e-17 + 3.30419672e-17j,
+                                     -1.26994490e-17 + 5.26268531e-17j,
+                                     3.02843426e-16 - 3.94082694e-16j,
+                                     8.18544371e-17 - 2.69101078e-17j])
 
         omegas = calculate_overlap_integrals()
-        theta = [omega * Dt for omega in omegas]
-        n = 4
+        theta = [omega * Dt/10 for omega in omegas]
+        qc = suzuki_approx(4, n, theta)
+        q = QuantumRegister(n)
+        quantum_circuit = QuantumCircuit(q)
+        """
+        for _ in range(10):
+            quantum_circuit.compose(qc, inplace=True)
+
         initial_state = initial_state.data
-        qc = generate_Hamiltonian_circuit(n, theta)
+        #qc = generate_Hamiltonian_circuit(n, theta)
         #qc = get_H_qiskit()
         # qc = get_H_paper()
-        n_target = 4
-    quantum_phase_estimation(initial_state, Dt, qc, n_ancilla, n_target)
+        """
+    quantum_phase_estimation(initial_state, Dt, qc, n_ancilla, n)
 
 
 if __name__ == "__main__":
@@ -452,22 +475,22 @@ if __name__ == "__main__":
 
 """
 GROUND STATE: 
-initial_state = Statevector([-1.43242713e-16 - 3.42061922e-19j,
-                                     2.69077742e-16 + 1.31011834e-16j,
-                                     -6.13036438e-02 + 8.48454935e-02j,
-                                     -6.66979993e-17 - 2.45946145e-16j,
-                                     -5.83722787e-17 + 1.64383932e-17j,
-                                     -2.50090981e-16 - 3.34441110e-16j,
-                                     2.15239159e-16 - 7.78175101e-17j,
-                                     5.82438613e-01 - 8.06106921e-01j,
-                                     1.25880380e-16 + 7.29404981e-18j,
-                                     -1.06842552e-17 - 1.77982080e-16j,
-                                     9.95321351e-18 - 2.35111180e-17j,
-                                     1.03461020e-16 - 2.90948381e-16j,
-                                     3.28184906e-16 - 1.94749371e-16j,
-                                     9.02125371e-18 - 4.80773953e-17j,
-                                     2.45417902e-16 - 3.46055651e-16j,
-                                     -4.98914730e-17 + 3.15834335e-17j])
+initial_state = Statevector([-5.46306871e-16-1.10677192e-18j,
+             -4.15840494e-17+7.18143166e-18j,
+             -6.13036438e-02+8.48454935e-02j,
+             -6.85424045e-18-5.47086398e-17j,
+             -4.43003096e-17-6.27824455e-18j,
+             -3.52575373e-17-1.03715200e-16j,
+              7.06857837e-17-7.84474487e-18j,
+              5.82438613e-01-8.06106921e-01j,
+             -1.04118493e-17-2.57393164e-18j,
+             -9.31158148e-18-1.91883772e-16j,
+              2.24375784e-17+4.01088335e-17j,
+              3.96293736e-18+3.47688818e-17j,
+             -4.44809564e-17+3.30419672e-17j,
+             -1.26994490e-17+5.26268531e-17j,
+              3.02843426e-16-3.94082694e-16j,
+              8.18544371e-17-2.69101078e-17j])
 E bond length 0.7 ground state = -1.892 (not including nuclear repulsion energy)
                             
 EXCITED STATE: 
