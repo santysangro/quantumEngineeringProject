@@ -264,7 +264,7 @@ class qiskitBuilder():
     def addCP(self, control, target, angle, sym = False):
 
         # Handle multiple callings
-        if type(control) is list and type(target) is list and type(angle) is list and len(control) == len(angle):
+        if type(control) is list and type(target) is list and type(angle) is list and len(control) == len(angle) and len(control) == len(target):
 
             for i in range(0, len(control)):
                 self.addCP(control[i], target[i], angle[i], sym)
