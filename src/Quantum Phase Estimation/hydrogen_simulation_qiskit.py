@@ -34,11 +34,11 @@ for bond_length in bond_lengths:
     mapper = BravyiKitaevMapper()
     qubit_op = mapper.map(second_q_op)
 
-    eigensolver = NumPyEigensolver(k=2)  # Find the ground state and the first excited state
+    eigensolver = NumPyEigensolver(k=4)  # Find the ground state and the first excited state
     excited_states_solver = ExcitedStatesEigensolver(mapper, eigensolver)
     # Solve for the excited states
     result = excited_states_solver.solve(problem)
-    state_prep = result.eigenstates[0][0] #1 = excited, 0 = ground
+    state_prep = result.eigenstates[3][0] #1 = excited, 0 = ground
 
     compiled = transpile(state_prep, sim)
     job = sim.run(compiled)
@@ -48,8 +48,8 @@ for bond_length in bond_lengths:
     print(state_vector)
     # Store the ground state energy for each bond length
 
-    energy.append(result.eigenvalues[0] + hamiltonian.nuclear_repulsion_energy)
-    print(f"Energy at bond length {bond_length}: {result.eigenvalues[0]}") #+ hamiltonian.nuclear_repulsion_energy}")
+    energy.append(result.eigenvalues[3] + hamiltonian.nuclear_repulsion_energy)
+    print(f"Energy at bond length {bond_length}: {result.eigenvalues[3]}") #+ hamiltonian.nuclear_repulsion_energy}")
 
 plt.scatter(bond_lengths, energy, marker="o", label="This Study")
 plt.xlabel('Bond length [$\mathrm{\AA}$]')

@@ -31,7 +31,7 @@ def get_H_paper():
     hamiltonian_ferm_op = of.get_fermion_operator(hamiltonian)
     hamiltonian_bk = of.bravyi_kitaev(hamiltonian_ferm_op)
     hamiltonian_bk_sparse = of.get_sparse_operator(hamiltonian_bk)
-    eigs, state = linalg.eigsh(hamiltonian_bk_sparse, k=1, which='SA')
+    eigs, state = linalg.eigsh(hamiltonian_bk_sparse, k=2, which='SA')
     print(state)
     # Convert to Scipy sparse matrix
     terms = hamiltonian_bk.terms  # Returns a dictionary of Pauli strings and coefficients
@@ -436,25 +436,18 @@ def main():
 
         n = 1
     else:
-        initial_state = Statevector([-5.46306871e-16 - 1.10677192e-18j,
-                                     -4.15840494e-17 + 7.18143166e-18j,
-                                     -6.13036438e-02 + 8.48454935e-02j,
-                                     -6.85424045e-18 - 5.47086398e-17j,
-                                     -4.43003096e-17 - 6.27824455e-18j,
-                                     -3.52575373e-17 - 1.03715200e-16j,
-                                     7.06857837e-17 - 7.84474487e-18j,
-                                     5.82438613e-01 - 8.06106921e-01j,
-                                     -1.04118493e-17 - 2.57393164e-18j,
-                                     -9.31158148e-18 - 1.91883772e-16j,
-                                     2.24375784e-17 + 4.01088335e-17j,
-                                     3.96293736e-18 + 3.47688818e-17j,
-                                     -4.44809564e-17 + 3.30419672e-17j,
-                                     -1.26994490e-17 + 5.26268531e-17j,
-                                     3.02843426e-16 - 3.94082694e-16j,
-                                     8.18544371e-17 - 2.69101078e-17j])
+        initial_state = Statevector([1.22411299e-16-5.78888759e-18j,1.58719196e-17+1.56856254e-17j,
+                                    4.25153683e-18+7.91276103e-18j,1.01717026e-16-8.30639476e-18j,
+                                    -1.95521231e-15+2.05651917e-15j, 3.33577058e-01+6.37688989e-01j,
+                                    3.31536358e-18+5.18775441e-16j, 6.86347675e-18-4.09326970e-17j,
+                                    -5.55490863e-17+1.32262430e-17j, -4.63314348e-17-3.87297303e-16j,
+                                    2.44189090e-17-3.93261627e-17j, -9.28186882e-17+4.34504567e-16j,
+                                    1.09693937e-16+4.22424053e-16j, -4.11603327e-01+5.59161694e-01j,
+                                    -1.11673037e-15+9.32316037e-16j, -7.61220987e-17+3.82063516e-17j])
+
 
         omegas = calculate_overlap_integrals()
-        theta = [omega * Dt/10 for omega in omegas]
+        theta = [omega * Dt for omega in omegas]
         qc = suzuki_approx(4, n, theta)
         q = QuantumRegister(n)
         quantum_circuit = QuantumCircuit(q)
