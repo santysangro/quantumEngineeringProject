@@ -272,28 +272,6 @@ class qiskitBuilder():
         if sym:
             self._pushGate_([lambda: self.qs.swap(qubit1, qubit2)])
 
-    """
-    Adds swap gate to the specified (logical) qubits. Supports parallel lists
-    as arguments for multiple gates.
-    """
-    @autoPopDecorator
-    def addGlobalPhaseShift(self, qubit1, angle, sym = False):
-        # Handle multiple callings
-        if type(qubit1) is list and type(angle) is list and len(qubit1) == len(angle):
-
-            for i in range(0, len(qubit1)):
-                self.addGlobalPhaseShift(qubit1[i], angle[i], sym)
-                self.embed()
-            return
-
-        # Swap(Q1_L, Q2_L) = Swap(Q11_L, Q12_L, Q21_L, Q22_L) => Q21_L Q22_L Q11_L Q12_L
-        Ri_matrix = np.array([[np.exp(-1j * angle / 2), 0],
-                          [0, np.exp(-1j * angle / 2)]])
-        unitary_gate = Operator(Ri_matrix)
-        self.qs.append(unitary_gate, [3])     
-        if sym:
-            self._pushGate_([lambda: self.qs.append(unitary_gate, [3])])
-
     def initializeToLogicalGround(self):
 
         # No initialization required
