@@ -30,7 +30,7 @@ def generateHamiltonian(theta, builder):
     hamiltonianBuilder.addCPauli(["x"] * 3, [0, 1, 2], [1, 2, 3], sym=True)
     
     hamiltonianBuilder.embed()
-    hamiltonianBuilder.add(3, theta[0]) // i()
+    hamiltonianBuilder.addP(3, theta[0])
     hamiltonianBuilder.pop(n = 3)
 
     hamiltonianBuilder.addRotation(["z"] * 3, [0, 1, 2], [theta[1], theta[2], theta[3]])
