@@ -24,7 +24,7 @@ def getBuilderByType(builderType):
 def generateHamiltonian(theta, builder):
     # Build a hamiltonian
     hamiltonianBuilder = builder(4)
-    hamiltonianBuilder.addPauli("x", 3) // remove later when implementing
+    hamiltonianBuilder.addPauli("x", 3)
     
     # First Part
     hamiltonianBuilder.addCPauli(["x"] * 3, [0, 1, 2], [1, 2, 3], sym=True)
