@@ -130,7 +130,9 @@ def generatePhaseEstimation (num_ancila, num_target, Dt, hamiltonian):
 
     for q in range(num_ancila):
         QPEBuilder.addH(q)
-
+        
+    QPEBuilder.initializeState(initial_state, qubits=list(range(num_ancila, num_ancila + num_target)))
+    
     # Controlled-U operations using repeated applications of U
     for q in range(num_ancila):
         for _ in range(2 ** q):
