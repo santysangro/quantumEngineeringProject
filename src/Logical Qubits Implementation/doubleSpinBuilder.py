@@ -61,7 +61,7 @@ class doubleSpinBuilder(qiskitBuilder):
                 
         elif axis == "z":
             # Z_L = Z_1 X_2 (Transversal)
-            self.qs.y(2 * qubit)
+            self.qs.z(2 * qubit)
             self.qs.x(2 * qubit + 1)
             if sym:
                 self._pushGate_([lambda: self.qs.x(2 * qubit + 1), lambda: self.qs.z(2 * qubit)])

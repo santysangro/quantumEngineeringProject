@@ -43,6 +43,15 @@ class qiskitBuilder():
         self.autoPop = True
 
 
+<<<<<<< HEAD
+=======
+    def appendCircuit(qc, min_qubit, max_qubit, control_qubit = None):
+        if (control_qubit == None):
+            self.qs.append(qc, list(range(2 * min_qubit, 2 * max_qubit + 1)))
+        else:
+            self.qs.append(qc, [2 * control_qubit, 2 * control_qubit + 1] + list(range(2 * min_qubit, 2 * max_qubit + 1)))
+        
+>>>>>>> origin/builders
     """
     Embed further gates between the two symmetric gates; does not change the functionality if there is no
     active symmetric gate.
@@ -237,21 +246,39 @@ class qiskitBuilder():
     def addCP(self, control, target, angle, sym = False):
 
         # Handle multiple callings
-        if type(control) is list and type(target) is list and type(angle) is list and len(qubit) == len(angle):
+        if type(control) is list and type(target) is list and type(angle) is list and len(control) == len(angle) and len(control) == len(target):
 
-            for i in range(0, len(qubit)):
+            for i in range(0, len(control)):
                 self.addCP(control[i], target[i], angle[i], sym)
                 self.embed()
             return
-
-        
+ 
         self.qs.cp(angle, control, target)
         
         if sym:
-            self._pushGate_(lambda: self.qs.cp(2 * control, 2 * target, angle))
+            self._pushGate_(lambda: self.qs.cp(angle, 2 * control, 2 * target))
+    
+    """
+    Adds swap gate to the specified (logical) qubits. Supports parallel lists
+    as arguments for multiple gates.
+    """
+    @autoPopDecorator
+    def addSwap(self, qubit1, qubit2, sym = False):
+        # Handle multiple callings
+        if type(qubit1) is list and type(qubit2) is list and len(qubit1) == len(qubit2):
+
+            for i in range(0, len(qubit1)):
+                self.addSwap(qubit1[i], qubit2[i], sym)
+                self.embed()
+            return
+
+        # Swap(Q1_L, Q2_L) = Swap(Q11_L, Q12_L, Q21_L, Q22_L) => Q21_L Q22_L Q11_L Q12_L     
+        self.qs.swap(2 * qubit1, 2 * qubit2)
+        self.qs.swap(2 * qubit1 + 1, 2 * qubit2 + 1)
+        if sym:
+            self._pushGate_([lambda: self.qs.swap(2 * qubit1 + 1, 2 * qubit2 + 1), lambda: self.qs.swap(2 * qubit1, 2 * qubit2)])
 
     def initializeToLogicalGround(self):
 
         # No initialization required
         self.qs.i(0)
-        

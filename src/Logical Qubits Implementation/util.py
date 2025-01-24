@@ -65,7 +65,7 @@ def generateHamiltonian(theta, builder):
     hamiltonianBuilder.addRotation("z", 2, theta[7])
     hamiltonianBuilder.pop(n = 4)
 
-    hamiltonianBuilder.addRotation(["x"] * 2, [0,2], [0.785] * 2)
+    hamiltonianBuilder.addRotation("x", [0,2], [0.785] * 2)
 
     hamiltonianBuilder.addCPauli(["x"] * 2, [0, 1], [1, 2], sym=True)
     
@@ -73,7 +73,7 @@ def generateHamiltonian(theta, builder):
     hamiltonianBuilder.addRotation("z", 2, theta[8])
     hamiltonianBuilder.pop(n = 2)
 
-    hamiltonianBuilder.addRotation(["x"] * 2, [0,2], [-0.785] * 2)
+    hamiltonianBuilder.addRotation("x", [0,2], [-0.785] * 2)
 
     hamiltonianBuilder.addCPauli(["x"] * 2, [0, 1], [1, 2], sym=True)
     
@@ -105,7 +105,7 @@ def generateHamiltonian(theta, builder):
     hamiltonianBuilder.addRotation("z", 3, theta[12])
     hamiltonianBuilder.pop(n = 5)
 
-    hamiltonianBuilder.addRotation(["x"] * 2, [0,2], [0.785] * 2)
+    hamiltonianBuilder.addRotation("x", [0,2], [0.785] * 2)
 
     hamiltonianBuilder.addCPauli(["x"] * 3, [0, 1, 2], [1, 2, 3], sym=True)
     
@@ -113,7 +113,7 @@ def generateHamiltonian(theta, builder):
     hamiltonianBuilder.addRotation("z", 3, theta[13])
     hamiltonianBuilder.pop(n = 3)
 
-    hamiltonianBuilder.addRotation(["x"] * 2, [0,2], [-0.785] * 2)
+    hamiltonianBuilder.addRotation("x", [0,2], [-0.785] * 2)
 
     # Fourth Part
     hamiltonianBuilder.addCPauli(["x"] * 3, [0, 1, 2], [1, 2, 3], sym=True)
@@ -127,10 +127,47 @@ def generateHamiltonian(theta, builder):
 
 
 def generateQFT(num_logical):
-    
+    """
+    Generates a Quantum Fourier Transform (QFT) circuit for the given number of logical qubits.
+    """
     qftBuilder = qiskitBuilder(num_logical)
-    
-    #for (target in range(0, num_logical)):
-    #    qftBuilder.addH(target)
-    #    for (control in range(target + 1, num_logical)):
+
+    # Iterate over each target qubit
+    for target in range(num_logical):
+        # Add a Hadamard gate to the target qubit
+        qftBuilder.addH(target)
+
+        # Add controlled phase gates with decreasing angles
+        for control in range(target + 1, num_logical):
+            angle = np.pi / (2 ** (control - target))
+            qftBuilder.addCP(control, target, angle)
+
+    # Add a final step to reverse the qubit order for QFT output
+    for i in range(num_logical // 2):
+        #qftBuilder.qs.swap(i * 2, (num_logical - 1 - i) * 2)
+        #qftBuilder.qs.swap(i * 2 + 1, (num_logical - 1 - i) * 2 + 1)
+        qftBuilder.addSwap(i, (num_logical - 1 - i))
+
+    return qftBuilder.build()
             
+def generateInverseQFT(num_logical):
+    """
+    Generates a Quantum Fourier Transform (QFT) circuit for the given number of logical qubits.
+    """
+    qftBuilder = qiskitBuilder(num_logical)
+    # Reverse the qubit order for QFT output
+    for i in range(num_logical // 2):
+        #qftBuilder.qs.swap(i * 2, (num_logical - 1 - i) * 2)
+        #qftBuilder.qs.swap(i * 2 + 1, (num_logical - 1 - i) * 2 + 1)
+        qftBuilder.addSwap(i, (num_logical - 1 - i))
+    
+    # Iterate over each target qubit
+    for target in range(num_logical - 1, -1, -1):
+        # Add controlled phase gates with decreasing angles
+        for control in range(num_logical - 1, target, -1):
+            angle = np.pi / (2 ** (control - target))
+            qftBuilder.addCP(control, target, -angle)      # This is an Rdagger gate
+        # Add a Hadamard gate to the target qubit
+        qftBuilder.addH(target)
+
+    return qftBuilder.build()
