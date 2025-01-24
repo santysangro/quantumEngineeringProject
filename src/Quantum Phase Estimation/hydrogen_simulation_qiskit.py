@@ -8,8 +8,9 @@ from qiskit_nature.second_q.algorithms import ExcitedStatesEigensolver
 from qiskit_nature.second_q.algorithms import GroundStateEigensolver
 from qiskit_algorithms import NumPyEigensolver
 from qiskit_aer import StatevectorSimulator
+from qiskit_nature.second_q.circuit.library import HartreeFock
 import matplotlib.pyplot as plt
-bond_lengths = np.array([1.0, 1.2, 1.3, 1.39, 1.4, 1.4011, 1.41, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2])/2
+bond_lengths = np.array([0.3])#np.array([1.0, 1.2, 1.3, 1.39, 1.4, 1.4011, 1.41, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2])/2
 energy = []
 
 #REPLICATION OF THE HYDROGEN SIMULATION GROUND ENERGY AT DIFFERENT BOND LENGTHS FOLLOWING THE FINDINGS OF Yili Zhang (2022).
@@ -34,11 +35,11 @@ for bond_length in bond_lengths:
     mapper = BravyiKitaevMapper()
     qubit_op = mapper.map(second_q_op)
 
-    eigensolver = NumPyEigensolver(k=4)  # Find the ground state and the first excited state
+    eigensolver = NumPyEigensolver(k=2)  # Find the ground state and the first excited state
     excited_states_solver = ExcitedStatesEigensolver(mapper, eigensolver)
     # Solve for the excited states
     result = excited_states_solver.solve(problem)
-    state_prep = result.eigenstates[3][0] #1 = excited, 0 = ground
+    state_prep = result.eigenstates[0][0] #1 = excited, 0 = ground
 
     compiled = transpile(state_prep, sim)
     job = sim.run(compiled)
@@ -48,8 +49,27 @@ for bond_length in bond_lengths:
     print(state_vector)
     # Store the ground state energy for each bond length
 
-    energy.append(result.eigenvalues[3] + hamiltonian.nuclear_repulsion_energy)
-    print(f"Energy at bond length {bond_length}: {result.eigenvalues[3]}") #+ hamiltonian.nuclear_repulsion_energy}")
+    energy.append(result.eigenvalues[0] + hamiltonian.nuclear_repulsion_energy)
+    print(f"Energy at bond length {bond_length}: {result.eigenvalues[0]}") #+ hamiltonian.nuclear_repulsion_energy}")
+
+    num_spin_orbitals = problem.num_spatial_orbitals
+    num_particles = (problem.num_alpha, problem.num_beta)
+
+    # Construct the Hartree-Fock state circuit
+    hf_state = HartreeFock(
+        num_spatial_orbitals=num_spin_orbitals,
+        num_particles=num_particles,
+        qubit_mapper=mapper,
+    )
+
+    # Print the HF state circuit
+    print(hf_state)
+    compiled = transpile(hf_state)
+    job = sim.run(compiled)
+    state_vector_result = job.result()
+    # Get statevector
+    state_vector = state_vector_result.get_statevector(compiled)
+    print(state_vector)
 
 plt.scatter(bond_lengths, energy, marker="o", label="This Study")
 plt.xlabel('Bond length [$\mathrm{\AA}$]')
