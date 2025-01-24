@@ -147,7 +147,30 @@ def generateQFT(num_logical):
     """
     Generates a Quantum Fourier Transform (QFT) circuit for the given number of logical qubits.
     """
+    qftBuilder = qiskitBuilder(num_logical)    
+    # Iterate over each target qubit
+    for target in range(num_logical - 1, -1, -1):
+        # Add controlled phase gates with decreasing angles
+        for control in range(num_logical - 1, target, -1):
+            angle = np.pi / (2 ** (control - target))
+            qftBuilder.addCP(control, target, -angle)      # This is an Rdagger gate
+        # Add a Hadamard gate to the target qubit
+        qftBuilder.addH(target)
+    
+    for i in range(num_logical // 2):
+        #qftBuilder.qs.swap(i * 2, (num_logical - 1 - i) * 2)
+        #qftBuilder.qs.swap(i * 2 + 1, (num_logical - 1 - i) * 2 + 1)
+        qftBuilder.addSwap(i, (num_logical - 1 - i))
+
+    return qftBuilder.build()
+   
+def generateInverseQFT(num_logical):
     qftBuilder = qiskitBuilder(num_logical)
+    
+    for i in range(num_logical // 2):
+        #qftBuilder.qs.swap(i * 2, (num_logical - 1 - i) * 2)
+        #qftBuilder.qs.swap(i * 2 + 1, (num_logical - 1 - i) * 2 + 1)
+        qftBuilder.addSwap(i, (num_logical - 1 - i))
 
     # Iterate over each target qubit
     for target in range(num_logical):
@@ -157,34 +180,6 @@ def generateQFT(num_logical):
         # Add controlled phase gates with decreasing angles
         for control in range(target + 1, num_logical):
             angle = np.pi / (2 ** (control - target))
-            qftBuilder.addCP(control, target, angle)
-
-    # Add a final step to reverse the qubit order for QFT output
-    for i in range(num_logical // 2):
-        #qftBuilder.qs.swap(i * 2, (num_logical - 1 - i) * 2)
-        #qftBuilder.qs.swap(i * 2 + 1, (num_logical - 1 - i) * 2 + 1)
-        qftBuilder.addSwap(i, (num_logical - 1 - i))
-
-    return qftBuilder.build()
-            
-def generateInverseQFT(num_logical):
-    """
-    Generates a Quantum Fourier Transform (QFT) circuit for the given number of logical qubits.
-    """
-    qftBuilder = qiskitBuilder(num_logical)
-    # Reverse the qubit order for QFT output
-    for i in range(num_logical // 2):
-        #qftBuilder.qs.swap(i * 2, (num_logical - 1 - i) * 2)
-        #qftBuilder.qs.swap(i * 2 + 1, (num_logical - 1 - i) * 2 + 1)
-        qftBuilder.addSwap(i, (num_logical - 1 - i))
-    
-    # Iterate over each target qubit
-    for target in range(num_logical - 1, -1, -1):
-        # Add controlled phase gates with decreasing angles
-        for control in range(num_logical - 1, target, -1):
-            angle = np.pi / (2 ** (control - target))
-            qftBuilder.addCP(control, target, -angle)      # This is an Rdagger gate
-        # Add a Hadamard gate to the target qubit
-        qftBuilder.addH(target)
+            qftBuilder.addCP(control, target, -angle)
 
     return qftBuilder.build()
