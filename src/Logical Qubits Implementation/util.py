@@ -24,13 +24,13 @@ def getBuilderByType(builderType):
 def generateHamiltonian(theta, builder):
     # Build a hamiltonian
     hamiltonianBuilder = builder(4)
-
+    # hamiltonianBuilder.addPauli("x", 3) // remove later when implementing
     
     # First Part
     hamiltonianBuilder.addCPauli(["x"] * 3, [0, 1, 2], [1, 2, 3], sym=True)
     
     hamiltonianBuilder.embed()
-    hamiltonianBuilder.addP(3, theta[0])
+    hamiltonianBuilder.add(3, theta[0]) // i()
     hamiltonianBuilder.pop(n = 3)
 
     hamiltonianBuilder.addRotation(["z"] * 3, [0, 1, 2], [theta[1], theta[2], theta[3]])
@@ -65,7 +65,7 @@ def generateHamiltonian(theta, builder):
     hamiltonianBuilder.addRotation("z", 2, theta[7])
     hamiltonianBuilder.pop(n = 4)
 
-    hamiltonianBuilder.addRotation("x", [0,2], [0.785] * 2)
+    hamiltonianBuilder.addRotation(["x"] * 2, [0,2], [0.785] * 2)
 
     hamiltonianBuilder.addCPauli(["x"] * 2, [0, 1], [1, 2], sym=True)
     
@@ -73,7 +73,7 @@ def generateHamiltonian(theta, builder):
     hamiltonianBuilder.addRotation("z", 2, theta[8])
     hamiltonianBuilder.pop(n = 2)
 
-    hamiltonianBuilder.addRotation("x", [0,2], [-0.785] * 2)
+    hamiltonianBuilder.addRotation(["x"] * 2, [0,2], [-0.785] * 2)
 
     hamiltonianBuilder.addCPauli(["x"] * 2, [0, 1], [1, 2], sym=True)
     
@@ -105,7 +105,7 @@ def generateHamiltonian(theta, builder):
     hamiltonianBuilder.addRotation("z", 3, theta[12])
     hamiltonianBuilder.pop(n = 5)
 
-    hamiltonianBuilder.addRotation("x", [0,2], [0.785] * 2)
+    hamiltonianBuilder.addRotation(["x"] * 2, [0,2], [0.785] * 2)
 
     hamiltonianBuilder.addCPauli(["x"] * 3, [0, 1, 2], [1, 2, 3], sym=True)
     
@@ -113,7 +113,7 @@ def generateHamiltonian(theta, builder):
     hamiltonianBuilder.addRotation("z", 3, theta[13])
     hamiltonianBuilder.pop(n = 3)
 
-    hamiltonianBuilder.addRotation("x", [0,2], [-0.785] * 2)
+    hamiltonianBuilder.addRotation(["x"] * 2, [0,2], [-0.785] * 2)
 
     # Fourth Part
     hamiltonianBuilder.addCPauli(["x"] * 3, [0, 1, 2], [1, 2, 3], sym=True)
@@ -123,9 +123,27 @@ def generateHamiltonian(theta, builder):
     hamiltonianBuilder.pop(n = 3)
 
     hamiltonianBuilder.addH([0, 1, 2, 3])
-    return hamiltonianBuilder.build()
+    return hamiltonianBuilder
 
+def generatePhaseEstimation (num_ancila, num_target, Dt, hamiltonian):
 
+    QPEBuilder = qiskitBuilder(num_ancila + num_target, bin_num = num_ancila)
+
+    for q in range(num_ancila):
+        QPEBuilder.addH(q)
+
+    # Controlled-U operations using repeated applications of U
+    for q in range(num_ancila):
+        for _ in range(2 ** q):
+            controlled_circuit = hamiltonian.control(num_ctrl_qubits=1)
+            QPEBuilder.appendCircuit(controlled_circuit, num_ancila, num_ancila + num_target, q)
+
+    # Apply inverse Quantum Fourier Transform (QFT) to ancilla qubits
+    QPEBuilder.appendCircuit(generateInverseQFT(num_ancila), 0, num_ancila)
+
+    return QPEBuilder
+    
+    
 def generateQFT(num_logical):
     """
     Generates a Quantum Fourier Transform (QFT) circuit for the given number of logical qubits.

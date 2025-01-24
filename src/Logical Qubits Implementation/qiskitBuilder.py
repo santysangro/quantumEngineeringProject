@@ -2,15 +2,20 @@ from qiskit.quantum_info import Operator, Statevector
 from qiskit import transpile, QuantumCircuit, QuantumRegister
 
 class qiskitBuilder():
-    def __init__(self, qubit_num : int):
+    def __init__(self, qubit_num : int, bin_num = None):
         # States: 0_L = Up Up, 1_L = Down Down
         # Always detects a single X-error.
         self.logical_num = qubit_num
         self.physical_num = qubit_num
         self.pending = []
         self.autoPop = False
-        self.qs = QuantumCircuit(QuantumRegister(self.physical_num))
+        if (bin_num == None):
+            self.qs = QuantumCircuit(QuantumRegister(self.physical_num))
+        else:
+            self.qs = QuantumCircuit(self.physical_num, bin_num)
 
+    def getPhysicalNumber(self):
+        return self.physical_num
     """
     A decorator for handling symmetric nesting of components
     """
@@ -43,15 +48,6 @@ class qiskitBuilder():
         self.autoPop = True
 
 
-<<<<<<< HEAD
-=======
-    def appendCircuit(qc, min_qubit, max_qubit, control_qubit = None):
-        if (control_qubit == None):
-            self.qs.append(qc, list(range(2 * min_qubit, 2 * max_qubit + 1)))
-        else:
-            self.qs.append(qc, [2 * control_qubit, 2 * control_qubit + 1] + list(range(2 * min_qubit, 2 * max_qubit + 1)))
-        
->>>>>>> origin/builders
     """
     Embed further gates between the two symmetric gates; does not change the functionality if there is no
     active symmetric gate.
@@ -80,7 +76,7 @@ class qiskitBuilder():
         self.pop(n = len(self.pending))
         return self.qs
 
-    def appendCircuit(qc, min_qubit, max_qubit, control_qubit = None):
+    def appendCircuit(self, qc, min_qubit, max_qubit, control_qubit = None):
         if (control_qubit == None):
             self.qs.append(qc, list(range(min_qubit, max_qubit)))
         else:
@@ -256,7 +252,7 @@ class qiskitBuilder():
         self.qs.cp(angle, control, target)
         
         if sym:
-            self._pushGate_(lambda: self.qs.cp(angle, 2 * control, 2 * target))
+            self._pushGate_(lambda: self.qs.cp(angle, control, target))
     
     """
     Adds swap gate to the specified (logical) qubits. Supports parallel lists
@@ -273,10 +269,9 @@ class qiskitBuilder():
             return
 
         # Swap(Q1_L, Q2_L) = Swap(Q11_L, Q12_L, Q21_L, Q22_L) => Q21_L Q22_L Q11_L Q12_L     
-        self.qs.swap(2 * qubit1, 2 * qubit2)
-        self.qs.swap(2 * qubit1 + 1, 2 * qubit2 + 1)
+        self.qs.swap(qubit1, qubit2)
         if sym:
-            self._pushGate_([lambda: self.qs.swap(2 * qubit1 + 1, 2 * qubit2 + 1), lambda: self.qs.swap(2 * qubit1, 2 * qubit2)])
+            self._pushGate_([lambda: self.qs.swap(qubit1, qubit2)])
 
     def initializeToLogicalGround(self):
 
