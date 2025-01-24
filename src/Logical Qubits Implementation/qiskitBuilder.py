@@ -81,6 +81,12 @@ class qiskitBuilder():
         else:
             self.qs.append(qc, [control_qubit] + list(range(min_qubit, max_qubit)))
 
+    '''
+    !! Temporary
+    '''
+    def initializeState(self, StateVector, qubits):
+        self.qs.initialize(StateVector, qubits)
+        
     """
     Adds a 180-degrees rotation gate to the specified (logical) qubits. Supports parallel lists
     as arguments for multiple gates.
