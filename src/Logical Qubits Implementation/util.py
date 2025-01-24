@@ -24,7 +24,7 @@ def getBuilderByType(builderType):
 def generateHamiltonian(theta, builder):
     # Build a hamiltonian
     hamiltonianBuilder = builder(4)
-    # hamiltonianBuilder.addPauli("x", 3) // remove later when implementing
+    hamiltonianBuilder.addPauli("x", 3) // remove later when implementing
     
     # First Part
     hamiltonianBuilder.addCPauli(["x"] * 3, [0, 1, 2], [1, 2, 3], sym=True)
@@ -122,7 +122,6 @@ def generateHamiltonian(theta, builder):
     hamiltonianBuilder.addRotation("z", 3, theta[14])
     hamiltonianBuilder.pop(n = 3)
 
-    hamiltonianBuilder.addH([0, 1, 2, 3])
     return hamiltonianBuilder
 
 def generatePhaseEstimation (num_ancila, num_target, Dt, hamiltonian):
