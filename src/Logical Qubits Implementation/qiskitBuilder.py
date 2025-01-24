@@ -31,7 +31,6 @@ class qiskitBuilder():
                 out()
 
     
-    @staticmethod
     def autoPopDecorator(func):
         def wrapper(self, *args, **kwargs):
             self.handleAutoPop()
