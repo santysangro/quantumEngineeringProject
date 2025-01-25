@@ -177,14 +177,14 @@ def generateHamiltonian(theta, builder):
     hamiltonianBuilder.pop(n = 3)
     return hamiltonianBuilder
 
-def generatePhaseEstimation (num_ancila, num_target, Dt, hamiltonian, initial_state):
+def generatePhaseEstimation (num_ancila, num_target, Dt, hamiltonian, initial_state, builderMode = 1):
 
     QPEBuilder = qiskitBuilder(num_ancila + num_target, bin_num = num_ancila)
 
     for q in range(num_ancila):
         QPEBuilder.addH(q)
 
-    QPEBuilder.initialize(initial_state,list(range(num_ancila, num_ancila + num_target)))
+    QPEBuilder.initialize(initial_state, num_ancila, num_target, builderMode)
     # Controlled-U operations using repeated applications of U
     for q in range(num_ancila):
         for _ in range(2 ** q):

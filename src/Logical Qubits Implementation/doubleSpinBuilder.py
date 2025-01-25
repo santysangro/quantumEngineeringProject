@@ -14,7 +14,7 @@ class doubleSpinBuilder(qiskitBuilder):
         self.qs = QuantumCircuit(QuantumRegister(self.physical_num))
 
 
-    def appendCircuit(qc, min_qubit, max_qubit, control_qubit = None):
+    def appendCircuit(self, qc, min_qubit, max_qubit, control_qubit = None):
         if (control_qubit == None):
             self.qs.append(qc, list(range(2 * min_qubit, 2 * max_qubit + 1)))
         else:
@@ -170,9 +170,9 @@ class doubleSpinBuilder(qiskitBuilder):
 
         
         # Determine the rotation axis
-        self.qs.cx(2 * qubit, 2 * qubit + 1)  # CNOT: control on qubit 0, target on qubit 1
-        self.qs.h(2 * qubit)  # Hadamard on the first qubit
-        self.qs.cx(2 * qubit, 2 * qubit + 1)  # CNOT: control on qubit 0, target on qubit 1
+        self.qs.cx(2 * qubit, 2 * qubit + 1)
+        self.qs.h(2 * qubit)
+        self.qs.cx(2 * qubit, 2 * qubit + 1)
         if sym:
             self._pushGate_([lambda: self.qs.cx(2 * qubit, 2 * qubit + 1), lambda: self.qs.h(2 * qubit), lambda: self.qs.cx(2 * qubit, 2 * qubit + 1)])
 
@@ -214,7 +214,6 @@ class doubleSpinBuilder(qiskitBuilder):
         if sym:
             self._pushGate_(lambda: self.qs.cp(2 * control, 2 * target, angle))
 
-
     @qiskitBuilder.autoPopDecorator
     def addGlobalPhaseShift(self, qubit1, angle, sym = False):
         # Handle multiple callings
@@ -225,12 +224,11 @@ class doubleSpinBuilder(qiskitBuilder):
                 self.embed()
             return
 
-        # Swap(Q1_L, Q2_L) = Swap(Q11_L, Q12_L, Q21_L, Q22_L) => Q21_L Q22_L Q11_L Q12_L
         Ri_matrix = np.array([[np.exp(-1j * angle / 2), 0],
                           [0, np.exp(-1j * angle / 2)]])
         unitary_gate = Operator(Ri_matrix)
 
-        self.qs.append(unitary_gate, [2*qubit1 + 1])
-        self.qs.append(unitary_gate, [2*qubit1])          
+        self.qs.append(unitary_gate, [2*qubit1])
+        #self.qs.append(unitary_gate, [2*qubit1+1])
         if sym:
-            self.pushGate([lambda: self.qs.append(unitary_gate, [2*qubit1]),lambda: self.qs.append(unitary_gate, [2*qubit1 + 1])])
+            self.pushGate([lambda: self.qs.append(unitary_gate, [2*qubit1])])
