@@ -181,6 +181,7 @@ def generate_Hamiltonian_circuit(n, theta):
 
     qc = QuantumCircuit(q)
     # Forward iteration
+    """
     qc.cx(0, 1)
     qc.cx(1, 2)
     qc.cx(2, 3)
@@ -192,6 +193,7 @@ def generate_Hamiltonian_circuit(n, theta):
     qc.cx(2, 3)
     qc.cx(1, 2)
     qc.cx(0, 1)
+    """
     qc.rz(theta[1], 0)
     qc.rz(theta[2], 1)
     qc.rz(theta[3], 2)
@@ -199,7 +201,7 @@ def generate_Hamiltonian_circuit(n, theta):
     qc.cx(0, 1)
     qc.rz(theta[4], 1)
     qc.cx(0, 1)
-
+   
     # SECOND PART
     qc.cx(0, 2)
     qc.rz(theta[5], 2)
@@ -211,6 +213,7 @@ def generate_Hamiltonian_circuit(n, theta):
 
     qc.h(0)
     qc.h(2)
+
     qc.cx(0, 1)
     qc.cx(1, 2)
 
@@ -220,7 +223,9 @@ def generate_Hamiltonian_circuit(n, theta):
 
     qc.h(0)
     qc.h(2)
-
+    #qc.draw(output="mpl")
+    #plt.show()
+    #return qc
     qc.rx(np.pi / 2, 0)
     qc.rx(np.pi / 2, 2)
 
@@ -232,7 +237,7 @@ def generate_Hamiltonian_circuit(n, theta):
 
     qc.rx(-np.pi / 2, 0)
     qc.rx(-np.pi / 2, 2)
-
+    
     qc.cx(0, 1)
     qc.cx(1, 2)
     qc.rz(theta[9], 2)
@@ -414,7 +419,7 @@ def quantum_phase_estimation(initial_state, Dt, qc, n_ancilla=3, n_target=4):
         #qpe_circuit.reset(q)
         qpe_circuit.h(q)
 
-    #qpe_circuit.initialize(initial_state, qubits=list(range(n_ancilla, n_ancilla + n_target)))
+    qpe_circuit.initialize(initial_state, qubits=list(range(n_ancilla, n_ancilla + n_target)))
     # Controlled-U operations using repeated applications of U
     for q in range(n_ancilla):
         for _ in range(2 ** q):
