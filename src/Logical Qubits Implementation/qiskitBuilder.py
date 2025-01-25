@@ -85,8 +85,14 @@ class qiskitBuilder():
     '''
     !! Temporary
     '''
-    def initializeState(self, StateVector, qubits):
-        self.qs.initialize(StateVector, qubits)
+    @autoPopDecorator
+    def initializeState(self, StateVector, num_ancila, num_target, builderMode):
+        if (builderMode == 1):
+            self.qs.initialize(StateVector, list(range(num_ancila, num_ancila + num_target)))
+        elif (builderMode == 2):
+            self.qs.initialize(StateVector, list(range(num_ancila, num_ancila + num_target, 2)))
+            # self.qs.initialize(zeroVector, list(range(num_ancila + 1, num_ancila + num_target, 2)))
+            self.addCPauli(["x"] * int(num_target/2), list(range(num_ancila, num_ancila + num_target, 2)), list(range(num_ancila + 1, num_ancila + num_target, 2)), sym=False)
         
     """
     Adds a 180-degrees rotation gate to the specified (logical) qubits. Supports parallel lists
@@ -303,13 +309,3 @@ class qiskitBuilder():
 
         # No initialization required
         self.qs.i(0)
-
-
-    """
-   Initialize.
-    """
-    @autoPopDecorator
-    def initialize(self, initial_state, qubit_list):
-
-        # Handle multiple callings
-        self.qs.initialize(initial_state, qubit_list)
