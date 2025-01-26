@@ -195,8 +195,11 @@ class steaneBuilder(qiskitBuilder):
 
    # Note: P and CP gates omitted due to lack of usage.
 
-    def initializeToLogicalGround(self):
+    def initializeToLogicalGround(self, initial_state):
 
+        if (initial_state != None):
+            self.qs.initialize(initial_state, list(range(0, self.physical_num, 7)))
+        
         # Initialization required
         for qubit in range(0, self.logical_num):
             self.qs.h(7 * qubit)

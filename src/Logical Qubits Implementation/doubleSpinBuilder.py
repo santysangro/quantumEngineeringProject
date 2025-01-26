@@ -1,6 +1,6 @@
 from qiskit.quantum_info import Operator, Statevector
 from qiskit import transpile, QuantumCircuit, QuantumRegister
-
+import numpy as np
 from qiskitBuilder import qiskitBuilder
 
 class doubleSpinBuilder(qiskitBuilder):
@@ -90,6 +90,7 @@ class doubleSpinBuilder(qiskitBuilder):
         # Determine the rotation axis
         if axis == "x":
             # CX_L = C1X_1 C2X_2 (Transversal)
+            
             self.qs.cx(2 * control, 2 * target)
             self.qs.cx(2 * control + 1, 2 * target + 1)
             if sym:
@@ -133,24 +134,27 @@ class doubleSpinBuilder(qiskitBuilder):
         
         # Determine the rotation axis
         if axis == "x":
-            # Rx(theta)_L = Rx^1(theta/2) Rx^2(theta/2) (transversal)
-            self.qs.rx(angle / 2, qubit * 2)
-            self.qs.rx(angle / 2, qubit * 2 + 1)
+            # Rx(theta)_L = CNOT RX_1 CNOT
+            self.qs.cx(qubit * 2, qubit * 2 + 1)
+            self.qs.rx(angle, qubit * 2)
+            self.qs.cx(qubit * 2, qubit * 2 + 1)
             if sym:
-                self._pushGate_([lambda: self.qs.rx(angle / 2, qubit * 2 + 1), lambda: self.qs.rx(angle / 2, qubit * 2)])
+                self._pushGate_([lambda: self.qs.cx(qubit * 2, qubit * 2 + 1), lambda: self.qs.rx(angle, qubit * 2), lambda: self.qs.cx(qubit * 2, qubit * 2 + 1)])
         elif axis == "y":
-            # Ry(theta)_L = Ry^1(theta/2) Ry^2(theta/2) (transversal)
-            self.qs.ry(angle / 2, qubit * 2)
-            self.qs.ry(angle / 2, qubit * 2 + 1)
+            # Ry(theta)_L = CNOT RY_1 CNOT
+            self.qs.cx(qubit * 2, qubit * 2 + 1)
+            self.qs.ry(angle, qubit * 2)
+            self.qs.cx(qubit * 2, qubit * 2 + 1)
             if sym:
-                self._pushGate_([lambda: self.qs.ry(angle / 2, qubit * 2 + 1), lambda: self.qs.ry(angle / 2, qubit * 2)])
+                self._pushGate_([lambda: self.qs.cx(qubit * 2, qubit * 2 + 1), lambda: self.qs.ry(angle, qubit * 2), lambda: self.qs.cx(qubit * 2, qubit * 2 + 1)])
                 
         elif axis == "z":
-            # Rz(theta)_L = Rz^1(theta/2) Rz^2(theta/2) (transversal)
-            self.qs.rz(angle / 2, qubit * 2)
-            self.qs.rz(angle / 2, qubit * 2 + 1)
+            # RZ(theta)_L = CNOT RZ_1 CNOT
+            self.qs.cx(qubit * 2, qubit * 2 + 1)
+            self.qs.rz(angle, qubit * 2)
+            self.qs.cx(qubit * 2, qubit * 2 + 1)
             if sym:
-                self._pushGate_([lambda: self.qs.rz(angle / 2, qubit * 2 + 1), lambda: self.qs.rz(angle / 2, qubit * 2)])
+                self._pushGate_([lambda: self.qs.cx(qubit * 2, qubit * 2 + 1), lambda: self.qs.rz(angle, qubit * 2), lambda: self.qs.cx(qubit * 2, qubit * 2 + 1)])
 
     """
     Adds Hadamard gate to the specified (logical) qubits. Supports parallel lists
@@ -223,3 +227,22 @@ class doubleSpinBuilder(qiskitBuilder):
             self.qs.initialize(initial_state, list(range(0, self.physical_num, 2)))
             for log_qubit in range(0, self.logical_num):
                 self.qs.cx(2 * log_qubit, 2 * log_qubit + 1)
+                
+    @qiskitBuilder.autoPopDecorator
+    def addGlobalPhaseShift(self, qubit1, angle, sym = False):
+        # Handle multiple callings
+        if type(qubit1) is list and type(angle) is list and len(qubit1) == len(angle):
+
+            for i in range(0, len(qubit1)):
+                self.addGlobalPhaseShift(qubit1[i], angle[i], sym)
+                self.embed()
+            return
+
+        Ri_matrix = np.array([[np.exp(-1j * angle / 2), 0],
+                          [0, np.exp(-1j * angle / 2)]])
+        unitary_gate = Operator(Ri_matrix)
+
+        self.qs.append(unitary_gate, [2*qubit1])
+        #self.qs.append(unitary_gate, [2*qubit1+1])
+        if sym:
+            self.pushGate([lambda: self.qs.append(unitary_gate, [2*qubit1])])

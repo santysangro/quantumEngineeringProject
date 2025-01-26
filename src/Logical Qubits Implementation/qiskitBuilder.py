@@ -35,7 +35,6 @@ class qiskitBuilder():
                 out()
 
     
-    @staticmethod
     def autoPopDecorator(func):
         def wrapper(self, *args, **kwargs):
             self.handleAutoPop()
@@ -86,6 +85,18 @@ class qiskitBuilder():
         else:
             self.qs.append(qc, [control_qubit] + list(range(min_qubit, max_qubit)))
 
+    '''
+    !! Temporary
+    '''
+    @autoPopDecorator
+    def initializeState(self, StateVector, num_ancila, num_target, builderMode):
+        if (builderMode == 1):
+            self.qs.initialize(StateVector, list(range(num_ancila, num_ancila + num_target)))
+        elif (builderMode == 2):
+            self.qs.initialize(StateVector, list(range(num_ancila, num_ancila + num_target, 2)))
+            # self.qs.initialize(zeroVector, list(range(num_ancila + 1, num_ancila + num_target, 2)))
+            self.addCPauli(["x"] * int(num_target/2), list(range(num_ancila, num_ancila + num_target, 2)), list(range(num_ancila + 1, num_ancila + num_target, 2)), sym=False)
+        
     """
     Adds a 180-degrees rotation gate to the specified (logical) qubits. Supports parallel lists
     as arguments for multiple gates.
@@ -277,18 +288,27 @@ class qiskitBuilder():
         if sym:
             self._pushGate_([lambda: self.qs.swap(qubit1, qubit2)])
             
-    def addGlobalPhase(self, qubit, angle, sym = False):
+
+    @autoPopDecorator
+    def addGlobalPhaseShift(self, qubit1, angle, sym = False):
         # Handle multiple callings
-        if type(qubit) is list and type(angle) is list and len(qubit) == len(angle):
-            for i in range(0, len(qubit)):
-                self.addGlobalPhase(qubit[i], angle[i], sym)
+        if type(qubit1) is list and type(angle) is list and len(qubit1) == len(angle):
+
+            for i in range(0, len(qubit1)):
+                self.addGlobalPhaseShift(qubit1[i], angle[i], sym)
                 self.embed()
             return
 
-        
+        # Swap(Q1_L, Q2_L) = Swap(Q11_L, Q12_L, Q21_L, Q22_L) => Q21_L Q22_L Q11_L Q12_L
         Ri_matrix = np.array([[np.exp(-1j * angle / 2), 0],
                           [0, np.exp(-1j * angle / 2)]])
         unitary_gate = Operator(Ri_matrix)
+
+        self.qs.append(unitary_gate, [qubit1])     
+        if sym:
+            self.pushGate([lambda: self.qs.append(unitary_gate, [qubit1])])
+
+    def initializeToLogicalGround(self):
 
         self.qs.append(unitary_gate, [qubit])      
         
