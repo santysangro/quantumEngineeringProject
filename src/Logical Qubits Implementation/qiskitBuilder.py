@@ -1,5 +1,6 @@
 from qiskit.quantum_info import Operator, Statevector
 from qiskit import transpile, QuantumCircuit, QuantumRegister
+import numpy as np
 
 class qiskitBuilder():
     def __init__(self, qubit_num : int, bin_num = None):
@@ -16,6 +17,9 @@ class qiskitBuilder():
 
     def getPhysicalNumber(self):
         return self.physical_num
+
+    def getLogicalNumber(self):
+        return self.logical_num
     """
     A decorator for handling symmetric nesting of components
     """
@@ -272,8 +276,30 @@ class qiskitBuilder():
         self.qs.swap(qubit1, qubit2)
         if sym:
             self._pushGate_([lambda: self.qs.swap(qubit1, qubit2)])
+            
+    def addGlobalPhase(self, qubit, angle, sym = False):
+        # Handle multiple callings
+        if type(qubit) is list and type(angle) is list and len(qubit) == len(angle):
+            for i in range(0, len(qubit)):
+                self.addGlobalPhase(qubit[i], angle[i], sym)
+                self.embed()
+            return
 
-    def initializeToLogicalGround(self):
+        
+        Ri_matrix = np.array([[np.exp(-1j * angle / 2), 0],
+                          [0, np.exp(-1j * angle / 2)]])
+        unitary_gate = Operator(Ri_matrix)
 
-        # No initialization required
-        self.qs.i(0)
+        self.qs.append(unitary_gate, [qubit])      
+        
+        if sym:
+            self._pushGate_([lambda: self.qs.append(unitary_gate, [2*qubit])])
+            
+    def initializeToLogicalGround(self, initial_state = None):
+
+        if (initial_state == None):
+            # No initialization required
+            self.qs.i(0)
+        else:
+            self.qs.initialize(initial_state, list(range(0, self.physical_num)))
+        

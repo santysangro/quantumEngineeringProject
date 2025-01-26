@@ -22,6 +22,8 @@ def getBuilderByType(builderType):
     
 
 def generateHamiltonian(theta, builder):
+
+    quarter_pi = -0.785 # np.pi / 4
     # Build a hamiltonian
     hamiltonianBuilder = builder(4)
     # hamiltonianBuilder.addPauli("x", 3) // remove later when implementing
@@ -30,7 +32,7 @@ def generateHamiltonian(theta, builder):
     hamiltonianBuilder.addCPauli(["x"] * 3, [0, 1, 2], [1, 2, 3], sym=True)
     
     hamiltonianBuilder.embed()
-    hamiltonianBuilder.add(3, theta[0]) // i()
+    hamiltonianBuilder.addGlobalPhase(3, theta[0])
     hamiltonianBuilder.pop(n = 3)
 
     hamiltonianBuilder.addRotation(["z"] * 3, [0, 1, 2], [theta[1], theta[2], theta[3]])
@@ -65,7 +67,7 @@ def generateHamiltonian(theta, builder):
     hamiltonianBuilder.addRotation("z", 2, theta[7])
     hamiltonianBuilder.pop(n = 4)
 
-    hamiltonianBuilder.addRotation(["x"] * 2, [0,2], [0.785] * 2)
+    hamiltonianBuilder.addRotation(["x"] * 2, [0,2], [quarter_pi] * 2)
 
     hamiltonianBuilder.addCPauli(["x"] * 2, [0, 1], [1, 2], sym=True)
     
@@ -73,7 +75,7 @@ def generateHamiltonian(theta, builder):
     hamiltonianBuilder.addRotation("z", 2, theta[8])
     hamiltonianBuilder.pop(n = 2)
 
-    hamiltonianBuilder.addRotation(["x"] * 2, [0,2], [-0.785] * 2)
+    hamiltonianBuilder.addRotation(["x"] * 2, [0,2], [-quarter_pi] * 2)
 
     hamiltonianBuilder.addCPauli(["x"] * 2, [0, 1], [1, 2], sym=True)
     
@@ -105,7 +107,7 @@ def generateHamiltonian(theta, builder):
     hamiltonianBuilder.addRotation("z", 3, theta[12])
     hamiltonianBuilder.pop(n = 5)
 
-    hamiltonianBuilder.addRotation(["x"] * 2, [0,2], [0.785] * 2)
+    hamiltonianBuilder.addRotation(["x"] * 2, [0,2], [quarter_pi] * 2)
 
     hamiltonianBuilder.addCPauli(["x"] * 3, [0, 1, 2], [1, 2, 3], sym=True)
     
@@ -113,7 +115,7 @@ def generateHamiltonian(theta, builder):
     hamiltonianBuilder.addRotation("z", 3, theta[13])
     hamiltonianBuilder.pop(n = 3)
 
-    hamiltonianBuilder.addRotation(["x"] * 2, [0,2], [-0.785] * 2)
+    hamiltonianBuilder.addRotation(["x"] * 2, [0,2], [-quarter_pi] * 2)
 
     # Fourth Part
     hamiltonianBuilder.addCPauli(["x"] * 3, [0, 1, 2], [1, 2, 3], sym=True)
@@ -125,9 +127,14 @@ def generateHamiltonian(theta, builder):
     hamiltonianBuilder.addH([0, 1, 2, 3])
     return hamiltonianBuilder
 
-def generatePhaseEstimation (num_ancila, num_target, Dt, hamiltonian):
+def generatePhaseEstimation (num_ancila, num_target, Dt, hamiltonian, initial_state = None):
 
     QPEBuilder = qiskitBuilder(num_ancila + num_target, bin_num = num_ancila)
+
+    if initial_state != None:
+        initializerBuilder = hamiltonian.__class__(hamiltonian.getLogicalNumber())
+        initializerBuilder.initializeToLogicalGround(initial_state)
+        QPEBuilder.appendCircuit(initializerBuilder.build(), num_ancila, num_ancila + num_target)
 
     for q in range(num_ancila):
         QPEBuilder.addH(q)
@@ -135,7 +142,7 @@ def generatePhaseEstimation (num_ancila, num_target, Dt, hamiltonian):
     # Controlled-U operations using repeated applications of U
     for q in range(num_ancila):
         for _ in range(2 ** q):
-            controlled_circuit = hamiltonian.control(num_ctrl_qubits=1)
+            controlled_circuit = hamiltonian.build().control(num_ctrl_qubits=1)
             QPEBuilder.appendCircuit(controlled_circuit, num_ancila, num_ancila + num_target, q)
 
     # Apply inverse Quantum Fourier Transform (QFT) to ancilla qubits
@@ -187,5 +194,4 @@ def generateInverseQFT(num_logical):
             qftBuilder.addCP(control, target, -angle)      # This is an Rdagger gate
         # Add a Hadamard gate to the target qubit
         qftBuilder.addH(target)
-
     return qftBuilder.build()
