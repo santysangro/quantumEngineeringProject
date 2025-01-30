@@ -11,7 +11,13 @@ from doubleSpinBuilder import doubleSpinBuilder
 from steaneBuilder import steaneBuilder
 from heterogenousSurfaceBuilder import heterogenousSurfaceBuilder
 
-def getBuilderByType(builderType):
+def getBuilderByType(builderType : str):
+    """
+    Return the Builder implementation for the chosen logical code.
+
+    Parameters:
+        builderType (str): the name of the logical code.
+    """
     if builderType == "Single Qubit":
         return qiskitBuilder
     elif builderType == "Double Qubit":
@@ -75,6 +81,21 @@ def getBuilderByType(builderType):
 
 
 def generateHamiltonian(theta, builder, initial_state = None):
+    """
+    Generates the Hamiltonian circuit.
+    
+    Buildes the Hamiltonian circuit with theta coefficients, initialized at the given
+    initial state if provided.
+
+    Parameters:
+        theta: the Hamiltonian coefficients.
+        builder: the name of the logical code used.
+        initial_state = the initial statevector.
+
+    
+    Returns:
+        A builder containing the Hamiltonian. Call the command .build() to generate the circuit.
+    """
 
     quarter_pi = -0.785 # np.pi / 4
     # Build a hamiltonian
@@ -183,7 +204,20 @@ def generateHamiltonian(theta, builder, initial_state = None):
     return hamiltonianBuilder
 
 def generatePhaseEstimation (num_ancila, num_target, Dt, hamiltonian, initial_state = None):
+    """
+    Generates the Quantum Phase Estimation circuit on the chosen Hamiltonian.
 
+    Parameters:
+        num_ancila: the number of ancilla qubits for the QPE.
+        num_target: the number of physical qubits in the Hamiltonian.
+        Dt: legacy parameter, please ignore.
+        hamiltonian: The builder (!!! Not the circuit) for the hamiltonian.
+        initial_state = the initial statevector.
+
+    
+    Returns:
+        A builder containing the QPE. Call the command .build() to generate the circuit.
+    """
     QPEBuilder = qiskitBuilder(num_ancila + num_target, bin_num = num_ancila)
 
     if initial_state != None:
@@ -228,6 +262,9 @@ def generateQFT(num_logical):
     return qftBuilder.build()
             
 def generateInverseQFT(num_logical):
+    """
+    Generates the Inverse Quantum Fourier Transform (QFT^\dag) circuit for the given number of logical qubits.
+    """
     qftBuilder = qiskitBuilder(num_logical)
     
     for i in range(num_logical // 2):
