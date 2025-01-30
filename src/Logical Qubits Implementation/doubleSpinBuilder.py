@@ -60,9 +60,8 @@ class doubleSpinBuilder(qiskitBuilder):
                 self._pushGate_([lambda: self.qs.x(2 * qubit + 1), lambda: self.qs.y(2 * qubit)])
                 
         elif axis == "z":
-            # Z_L = Z_1 X_2 (Transversal)
+            # Z_L = Z_1 (Transversal)
             self.qs.z(2 * qubit)
-            self.qs.x(2 * qubit + 1)
             if sym:
                 self._pushGate_([lambda: self.qs.x(2 * qubit + 1), lambda: self.qs.z(2 * qubit)])
     """
@@ -104,9 +103,8 @@ class doubleSpinBuilder(qiskitBuilder):
                 self._pushGate_([lambda: self.qs.cx(2 * control + 1, 2 * target + 1), lambda: self.qs.cy(2 * control, 2 * target)])
                 
         elif axis == "z":
-            # CZ_L = C1Z_1 C2X_2 (Transversal)
+            # CZ_L = C1Z_1  (Transversal)
             self.qs.cz(2 * control, 2 * target)
-            self.qs.cx(2 * control + 1, 2 * target + 1)
             if sym:
                 self._pushGate_([lambda: self.qs.cx(2 * control + 1, 2 * target + 1), lambda: self.qs.cz(2 * control, 2 * target)])
      

@@ -1,17 +1,20 @@
 from qiskit.quantum_info import Operator, Statevector
-from qiskit import transpile, QuantumCircuit, QuantumRegister
+from qiskit import transpile, QuantumCircuit, QuantumRegister, ClassicalRegister
 
 from qiskitBuilder import qiskitBuilder
 
 class steaneBuilder(qiskitBuilder):
-    def __init__(self, qubit_num : int):
+    def __init__(self, qubit_num : int, fancy_qubits = False):
         # States: 0_L = Up Up, 1_L = Down Down
         # Always detects a single X-error.
         self.logical_num = qubit_num
-        self.physical_num = qubit_num * 7
+        self.physical_num = qubit_num * 7 + 1
         self.pending = []
         self.autoPop = False
-        self.qs = QuantumCircuit(QuantumRegister(self.physical_num))
+        if fancy_qubits:
+            self.qs = QuantumCircuit(*[QuantumRegister(7, name) for name in ["Q", "P", "R", "S" ][0:self.logical_num]], QuantumRegister(1, "Ancilla"), ClassicalRegister(1 + 7*(self.logical_num)))
+        else:
+            self.qs = QuantumCircuit(QuantumRegister(self.physical_num), ClassicalRegister(1))
 
 
     def appendCircuit(qc, min_qubit, max_qubit, control_qubit = None):
@@ -30,7 +33,7 @@ class steaneBuilder(qiskitBuilder):
     """
     @qiskitBuilder.autoPopDecorator
     def addPauli(self, axis, qubit, sym = False):
-
+        
         # Handle multiple callings
         if type(axis) is list or type(qubit) is list:
 
@@ -47,10 +50,10 @@ class steaneBuilder(qiskitBuilder):
         # Determine the rotation axis
         if axis == "x":
             # X_L = X_1 X_2 ... X_7 (Transversal)
-
+            
             for offset in range(0, 7):
                 self.qs.x(7 * qubit + offset)
-            
+                
             if sym:
                 self._pushGate_([lambda offset = offset: self.qs.x(7 * qubit + offset) for offset in range(0, 7)])
             
@@ -147,13 +150,15 @@ class steaneBuilder(qiskitBuilder):
         
         # Determine the rotation axis
         if axis == "x":
-            # Rx(theta)_L = Rx^1(theta/7) ... Rx^7(theta/7)  (Transversal)
+            # Use Magic Gate Injection
+            # NOT SAFE! Measurement-based Ancilla Injection
 
-            for offset in range(0, 7):
-                self.qs.rx(angle / 7 ,7 * qubit + offset)
+            self.addH(qubit)
+            self.addRotation("z", qubit, angle)
+            self.addH(qubit)
             
             if sym:
-                self._pushGate_([lambda offset = offset: self.qs.rx(angle / 7 ,7 * qubit + offset) for offset in range(0, 7)])
+                raise ValueError("Not implemented")
             
         elif axis == "y":
             # Note: It is possible to implement it indirectly without performing any additional optimizations,
@@ -161,13 +166,59 @@ class steaneBuilder(qiskitBuilder):
             raise ValueError("Not required")
                 
         elif axis == "z":
-            # Rz(theta)_L = Rz^1(theta/7) ... Rz^7(theta/7)  (Transversal)
+            # Use Magic Gate Injection
+            # NOT SAFE! Measurement-based Ancilla Injection
+
+            self.qs.reset(self.physical_num - 1)
+            self.qs.h(self.physical_num - 1)
+            self.qs.barrier()
+            self.qs.rz(angle, self.physical_num - 1)
+            self.qs.barrier()
+            
+            #self.qs.h(self.physical_num - 1)
+            self.qs.barrier()
 
             for offset in range(0, 7):
-                self.qs.rz(angle / 7 ,7 * qubit + offset)
+                self.qs.cx(7 * qubit + offset, self.physical_num -1)
+
+            
+            self.qs.barrier()
+            
+            
+            self.qs.measure(self.physical_num - 1, 0) # Z-basis measurement
+            self.qs.barrier()
+            #for offset in range(0, 7):
+            #    self.qs.cx(self.physical_num -1, 7 * qubit + offset)
+            #self.qs.barrier()
+            self.qs.mcp(angle, [self.physical_num - 1] + [7 * qubit + offset for offset in [1,3,5]], [7 * qubit + 6])
+            self.qs.mcp(angle, [self.physical_num - 1] + [7 * qubit + offset for offset in [0,3,4]], [7 * qubit + 6])
+            self.qs.mcp(angle, [self.physical_num - 1] + [7 * qubit + offset for offset in [2,3,6]], [7 * qubit + 0])
+            self.qs.mcp(angle, [self.physical_num - 1] + [7 * qubit + offset for offset in [0,1,2]], [7 * qubit + 6])
+            self.qs.mcp(angle, [self.physical_num - 1] + [7 * qubit + offset for offset in [1,4,6]], [7 * qubit + 0])
+            self.qs.mcp(angle, [self.physical_num - 1] + [7 * qubit + offset for offset in [0,5,6]], [7 * qubit + 1])
+            self.qs.mcp(angle, [self.physical_num - 1] + [7 * qubit + offset for offset in [2,4,5]], [7 * qubit + 6])
+            self.qs.mcp(-6 * angle, [self.physical_num - 1] + [7 * qubit + offset for offset in [0,1,2,3,4]], [7 * qubit + 6])
+            self.qs.barrier()
+            for offset in range(0, 7):
+                self.qs.x(7 * qubit + offset)
+            self.qs.barrier()
+            self.qs.mcp(angle, [self.physical_num - 1] + [7 * qubit + offset for offset in [1,3,5]], [7 * qubit + 6])
+            self.qs.mcp(angle, [self.physical_num - 1] + [7 * qubit + offset for offset in [0,3,4]], [7 * qubit + 6])
+            self.qs.mcp(angle, [self.physical_num - 1] + [7 * qubit + offset for offset in [2,3,6]], [7 * qubit + 0])
+            self.qs.mcp(angle, [self.physical_num - 1] + [7 * qubit + offset for offset in [0,1,2]], [7 * qubit + 6])
+            self.qs.mcp(angle, [self.physical_num - 1] + [7 * qubit + offset for offset in [1,4,6]], [7 * qubit + 0])
+            self.qs.mcp(angle, [self.physical_num - 1] + [7 * qubit + offset for offset in [0,5,6]], [7 * qubit + 1])
+            self.qs.mcp(angle, [self.physical_num - 1] + [7 * qubit + offset for offset in [2,4,5]], [7 * qubit + 6])
+            self.qs.mcp(-6 * angle, [self.physical_num - 1] + [7 * qubit + offset for offset in [0,1,2,3,4]], [7 * qubit + 6])
+            self.qs.barrier()
+            for offset in range(0, 7):
+                self.qs.x(7 * qubit + offset)
+                
+            #self.qs.reset(self.physical_num - 1)
             
             if sym:
-                self._pushGate_([lambda offset = offset: self.qs.rz(angle / 7 ,7 * qubit + offset) for offset in range(0, 7)])
+                raise ValueError("Not implemented")
+                
 
     """
     Adds Hadamard gate to the specified (logical) qubits. Supports parallel lists
@@ -198,21 +249,23 @@ class steaneBuilder(qiskitBuilder):
     def initializeToLogicalGround(self, initial_state):
 
         if (initial_state != None):
-            self.qs.initialize(initial_state, list(range(0, self.physical_num, 7)))
+            self.qs.initialize(initial_state, list(range(0, self.physical_num - 1, 7)))
         
         # Initialization required
         for qubit in range(0, self.logical_num):
-            self.qs.h(7 * qubit)
-            self.qs.h(7 * qubit + 1)
-            self.qs.h(7 * qubit + 3)
+            self.qs.h(7 * qubit + 6)
+            self.qs.h(7 * qubit + 5)
+            self.qs.h(7 * qubit + 4)
 
+            self.qs.cx(7 * qubit, 7 * qubit + 3)
             self.qs.cx(7 * qubit, 7 * qubit + 2)
-            self.qs.cx(7 * qubit + 3, 7 * qubit + 5)
 
-            self.qs.cx(7 * qubit + 1, 7 * qubit + 6)
-            self.qs.cx(7 * qubit, 7 * qubit + 4)
-            self.qs.cx(7 * qubit + 3, 7 * qubit + 6)
-            self.qs.cx(7 * qubit + 1, 7 * qubit + 5)
-            self.qs.cx(7 * qubit, 7 * qubit + 6)
-            self.qs.cx(7 * qubit + 1, 7 * qubit + 2)
-            self.qs.cx(7 * qubit + 3, 7 * qubit + 4)
+            self.qs.cx(7 * qubit + 6, 7 * qubit + 3)
+            self.qs.cx(7 * qubit + 6, 7 * qubit + 2)
+            self.qs.cx(7 * qubit + 6, 7 * qubit + 1)
+            self.qs.cx(7 * qubit + 5, 7 * qubit + 3)
+            self.qs.cx(7 * qubit + 5, 7 * qubit + 1)
+            self.qs.cx(7 * qubit + 5, 7 * qubit)
+            self.qs.cx(7 * qubit + 4, 7 * qubit + 2)
+            self.qs.cx(7 * qubit + 4, 7 * qubit + 1)
+            self.qs.cx(7 * qubit + 4, 7 * qubit + 0)

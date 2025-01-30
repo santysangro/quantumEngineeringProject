@@ -12,9 +12,9 @@ from steaneBuilder import steaneBuilder
 from heterogenousSurfaceBuilder import heterogenousSurfaceBuilder
 
 def getBuilderByType(builderType):
-    if builderType == "Physical":
+    if builderType == "Single Qubit":
         return qiskitBuilder
-    elif builderType == "Double Spin":
+    elif builderType == "Double Qubit":
         return doubleSpinBuilder
     elif builderType == "Steane":
         return steaneBuilder
@@ -74,11 +74,14 @@ def getBuilderByType(builderType):
 
 
 
-def generateHamiltonian(theta, builder):
+def generateHamiltonian(theta, builder, initial_state = None):
 
     quarter_pi = -0.785 # np.pi / 4
     # Build a hamiltonian
     hamiltonianBuilder = builder(4)
+
+    if initial_state != None:
+        hamiltonianBuilder.initializeToLogicalGround(initial_state)
     
     # First Part
 
