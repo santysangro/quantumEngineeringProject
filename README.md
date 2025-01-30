@@ -59,6 +59,7 @@ pip install numpy matplotlib qiskit-aer qiskit-nature openfermion openfermionpys
 | `doubleSpinBuilder.py` | *Builder file for Double-Qubit encoding* |
 | `qiskitBuilder.py` | *Builder file for regular Physical qubits* |
 | `steaneBuilder.py` | *Builder file for Steane encoding* |
+| `vizualize.py` | *Plotting and Vizualization functions for graphs and statistics* |
 | `util.py` | *Custom circuit construction file* |
 
 - Quantum Phase Estimation
