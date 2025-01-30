@@ -1,2 +1,0 @@
-.. automodule:: quantuminspire.exceptions
-   :members:
