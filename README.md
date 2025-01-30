@@ -1,87 +1,50 @@
-# Quantum Inspire SDK
+# Simulation of a Hydrogen Molecule Using Logical Qubits
 
-[![License](https://img.shields.io/github/license/qutech-delft/quantuminspire.svg?)](https://opensource.org/licenses/Apache-2.0)
-[![Coverage Status](https://coveralls.io/repos/github/QuTech-Delft/quantuminspire/badge.svg?branch=dev)](https://coveralls.io/github/QuTech-Delft/quantuminspire?branch=dev)
-[![Documentation Status](https://readthedocs.org/projects/quantum-inspire/badge/?version=latest)](https://quantum-inspire.readthedocs.io/en/latest/?badge=latest)
-[![](https://img.shields.io/github/release/qutech-delft/quantuminspire.svg)](https://github.com/qutech-delft/quantuminspire/releases)
-[![Downloads](https://pepy.tech/badge/quantuminspire)](https://pypi.org/project/quantuminspire/)
+Welcome to our project's repository.
 
-The Quantum Inspire platform allows to execute quantum algorithms using the cQASM language.
+## Dependencies and Installation
 
-The software development kit (SDK) for the Quantum Inspire platform consists of:
+### 0. Python
+This project is coded in Python. For installation, please consult: https://www.python.org/.
 
-* An API for the [Quantum Inspire](https://www.quantum-inspire.com/) platform (the QuantumInspireAPI class);
-* Backends for:
-  * the [ProjectQ SDK](https://github.com/ProjectQ-Framework/ProjectQ);
-  * the [Qiskit SDK](https://qiskit.org/).
-
-For more information on Quantum Inspire see
-[https://www.quantum-inspire.com/](https://www.quantum-inspire.com/). Detailed information
-on cQASM can be found in the Quantum Inspire
-[knowledge base](https://www.quantum-inspire.com/kbase/advanced-guide/).
-
-Examples of more complex algorithms that make use of Quantum Inspire SDK can be found in [Quantum Inspire Examples](https://github.com/QuTech-Delft/quantum-inspire-examples).
-
-## Installation
-
-The Quantum Inspire SDK can be installed from PyPI via pip:
-
+If Python version is lower than 3.14, pip might need to be installed separately. Try the following command, or visit https://pypi.org/project/pip/.
 ```
-pip install quantuminspire
+python -m ensurepip --upgrade
 ```
 
-In addition, to use Quantum Inspire through Qiskit or ProjectQ, install either or both of
-the qiskit and projectq packages:
+### 1. Qiskit. 
+Required for creation and running of quantum circuits.
 
+For more information, please consult: https://docs.quantum.ibm.com/guides.
+
+Can be installed via pip:
 ```
 pip install qiskit
-pip install projectq
 ```
 
-### Installing from source
+### 2. Jupyter Notebook
+Required for running of the Simulation Pipeline file.
 
-The source for the SDK can also be found at Github. For the default installation execute:
-
+Can be installed via pip:
 ```
-git clone https://github.com/QuTech-Delft/quantuminspire
-cd quantuminspire
-pip install .
+pip install qiskit
 ```
 
-This does not install ProjectQ or Qiskit, but will install the Quantum Inspire backends for
-those projects.
+### 3. Other Python Libraries
+Required for diverse computations throughout the project.
 
-If you want to include a specific SDK as a dependency, install with
-(e.g. for the ProjectQ backend):
+[library-name]: numpy, matplotlib, qiskit-aer, qiskit-nature, openfermion, openfermionpyscf, scipy, qiskit_algorithms 
 
+Can be installed via pip:
 ```
-pip install .[projectq]
+pip install [library_name]
 ```
-
-To install both ProjectQ as well as Qiskit as a dependency:
-
+or to install them all at once:
 ```
-pip install .[qiskit,projectq]
+pip install numpy matplotlib qiskit-aer qiskit-nature openfermion openfermionpyscf scipy qiskit_algorithms 
 ```
 
-### Installing for generating documentation
-To install the necessary packages to perform documentation activities for SDK do:
-
-```
-pip install -e .[rtd]
-```
-
-The documentation generation process is dependent on pandoc. When you want to generate the
-documentation and pandoc is not yet installed on your system navigate
-to [Pandoc](https://pandoc.org/installing.html) and follow the instructions found there to install pandoc.
-To build the 'readthedocs' documentation do:
-
-```
-cd docs
-make html
-```
-
-The documentation is then build in 'docs/_build/html' and can be viewed [here](docs/_build/html/index.html).
+⚠️ **openfermionpyscf requires PySCF, which is not supported natively on Windows. Use the Windows Subsystem for Linux.**
 
 ## Running
 
