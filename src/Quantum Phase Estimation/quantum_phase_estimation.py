@@ -25,7 +25,10 @@ basis = 'sto-3g'
 multiplicity = 1
 charge = 0
 
+"""
+Returns the Hamiltonian as defined of the paper of Yili Zhang (2022)
 
+"""
 def get_H_paper():
     n_qubits = 4
 
@@ -87,6 +90,10 @@ def get_H_paper():
     return evolution_circuit
 
 
+"""
+Returns the Hamiltonian using qiskit's library
+
+"""
 def get_H_qiskit():
     driver = PySCFDriver(
         atom="H 0 0 0; H 0 0 0.741237",
@@ -113,6 +120,10 @@ def get_H_qiskit():
     return evolution_circuit
 
 
+"""
+Returns the omegas for the hamiltonian
+
+"""
 def calculate_overlap_integrals():
     hamiltonian = generate_molecular_hamiltonian(geometry, basis, multiplicity, charge)
 
@@ -165,7 +176,11 @@ def calculate_overlap_integrals():
     return omegas
 
 
-# Example circuit from lecture slides Quantum Communication & Computation Week 3
+
+"""
+Example circuit from lecture slides Quantum Communication & Computation Week 3
+
+"""
 def example_circuit():
     R_matrix = np.array([[0, -1j],
                          [1j, 0]])
@@ -176,12 +191,17 @@ def example_circuit():
     return qc
 
 
+"""
+Returns the circuit for the Hamiltonian. 
+The commented version can be uncommented for the second order suzuki approximation.
+
+"""
 def generate_Hamiltonian_circuit(n, theta):
     q = QuantumRegister(n)
 
     qc = QuantumCircuit(q)
     # Forward iteration
-    """
+
     qc.cx(0, 1)
     qc.cx(1, 2)
     qc.cx(2, 3)
@@ -193,7 +213,7 @@ def generate_Hamiltonian_circuit(n, theta):
     qc.cx(2, 3)
     qc.cx(1, 2)
     qc.cx(0, 1)
-    """
+
     qc.rz(theta[1], 0)
     qc.rz(theta[2], 1)
     qc.rz(theta[3], 2)
@@ -395,6 +415,11 @@ def generate_Hamiltonian_circuit(n, theta):
     return qc
 
 
+"""
+Returns the 4th order Suzuki approximation circuit.
+generate_Hamiltonian_circuit() needs to be fully uncommented for this to work.
+
+"""
 def suzuki_approx(k, n, theta):
     uk = 1 / (4 - 4 ** (1 / (2 * k - 1)))
     theta1 = [2 * uk * value for value in theta]
@@ -412,6 +437,10 @@ def suzuki_approx(k, n, theta):
     return quantum_circuit
 
 
+"""
+Prints the eigenvalue found by the QPE
+
+"""
 def quantum_phase_estimation(initial_state, Dt, qc, n_ancilla=3, n_target=4):
     qpe_circuit = QuantumCircuit(n_ancilla + n_target, n_ancilla)
 
@@ -467,22 +496,10 @@ def main():
                                     dims=(2, 2, 2, 2))
 
         omegas = calculate_overlap_integrals()
-        theta = [2 * omega * Dt for omega in omegas]
+        theta = [2 * omega * Dt for omega in omegas] # Remove the 2 factor if using higher order approximations
         qc = generate_Hamiltonian_circuit(n, theta)
         #qc = get_H_paper()
         #qc = suzuki_approx(4, n, theta)
-        """
-        q = QuantumRegister(n)
-        quantum_circuit = QuantumCircuit(q)
-  
-        for _ in range(10):
-            quantum_circuit.compose(qc, inplace=True)
-
-        initial_state = initial_state.data
-        #qc = generate_Hamiltonian_circuit(n, theta)
-        #qc = get_H_qiskit()
-        # qc = get_H_paper()
-        """
     quantum_phase_estimation(initial_state, Dt, qc, n_ancilla, n)
 
 
